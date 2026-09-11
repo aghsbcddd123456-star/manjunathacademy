@@ -101,6 +101,26 @@
     <hr class="custom-divider">
 
     <div class="custom-section">
+      <h3>Loader logo</h3>
+      <p class="custom-section-sub">Optional. Shown on the loading screen instead of the logo above.</p>
+
+      <div class="custom-field">
+        <label>Loader logo image</label>
+        {{ form.loader_logo_image }}
+        <p class="custom-help">{{ form.loader_logo_image.help_text }}</p>
+        {% if form.loader_logo_image.errors %}<ul class="panel-errors">{% for e in form.loader_logo_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        {% if site_settings.loader_logo_image %}
+          <div class="custom-preview" style="background:#1A1620">
+            <img loading="lazy" decoding="async" src="{{ site_settings.loader_logo_image.url }}" alt="Current loader logo">
+            <span class="custom-preview-label" style="color:#E7E3DF">Current loader logo</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <hr class="custom-divider">
+
+    <div class="custom-section">
       <h3>Admin panel logo</h3>
       <p class="custom-section-sub">Optional. Shown in the admin panel sidebar instead of the logo above — useful if the header logo doesn't suit a dark sidebar.</p>
 

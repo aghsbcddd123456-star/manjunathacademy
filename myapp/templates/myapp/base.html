@@ -124,9 +124,9 @@ input,select,textarea,button{max-width:100%}
 {% block preloader %}
 <!-- ================= LOADER (logo animation, no spinner) ================= -->
 <div class="preloader" id="preloader">
-  {% if site_settings.logo_type == 'image' and site_settings.logo_image %}
+  {% if site_settings.effective_loader_logo_image %}
     <span class="preloader-crest">
-      <img src="{{ site_settings.logo_image.url }}" alt="Loading">
+      <img src="{{ site_settings.effective_loader_logo_image.url }}" alt="Loading">
     </span>
   {% else %}
     <span class="preloader-crest">

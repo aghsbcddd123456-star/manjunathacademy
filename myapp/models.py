@@ -81,7 +81,11 @@ class SiteSettings(models.Model):
     ]
 
     logo_type = models.CharField(max_length=10, choices=LOGO_TYPE_CHOICES, default=LOGO_TEXT)
-    logo_image = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 200×60px, transparent PNG. Also used for the loading screen and (unless a separate admin panel logo is set below) the admin panel sidebar.')
+    logo_image = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 200×60px, transparent PNG. Also used for the loading screen and admin panel sidebar, unless separate logos are set for them below.')
+    loader_logo_image = models.ImageField(
+        upload_to='branding/', blank=True, null=True,
+        help_text='Optional — shown on the loading screen instead of the logo above. Leave blank to reuse it there.',
+    )
     admin_logo_image = models.ImageField(
         upload_to='branding/', blank=True, null=True,
         help_text='Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there.',
@@ -126,6 +130,15 @@ class SiteSettings(models.Model):
         """Admin panel logo: the dedicated upload if set, else the header logo (when it's an image), else nothing."""
         if self.admin_logo_image:
             return self.admin_logo_image
+        if self.logo_type == self.LOGO_IMAGE and self.logo_image:
+            return self.logo_image
+        return None
+
+    @property
+    def effective_loader_logo_image(self):
+        """Loading screen logo: the dedicated upload if set, else the header logo (when it's an image), else nothing."""
+        if self.loader_logo_image:
+            return self.loader_logo_image
         if self.logo_type == self.LOGO_IMAGE and self.logo_image:
             return self.logo_image
         return None
