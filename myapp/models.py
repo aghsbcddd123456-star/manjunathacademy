@@ -150,7 +150,7 @@ class SiteSettings(models.Model):
 class BannerSlide(models.Model):
     order = models.PositiveIntegerField(default=0)
     kicker = models.CharField(max_length=100, blank=True, help_text='Small label above the title, e.g. "Admissions open"')
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, blank=True)
     subtitle = models.CharField(max_length=300, blank=True)
     button_text = models.CharField(max_length=50, blank=True)
     button_link = models.CharField(max_length=300, blank=True, help_text='e.g. #popular-courses or a full https:// URL')

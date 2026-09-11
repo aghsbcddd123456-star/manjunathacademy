@@ -26,6 +26,7 @@
   box-shadow:0 8px 22px rgba(16,16,18,.12);margin-bottom:24px;
 }
 .bn-mock::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.93) 0%,rgba(255,255,255,.78) 45%,rgba(255,255,255,.35) 100%)}
+.bn-mock.no-text::before{display:none}
 .bn-mock-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px}
 .bn-mock-kicker{margin:0;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}
 .bn-mock-title{font-family:"Archivo",sans-serif;font-weight:800;font-size:clamp(18px,3vw,26px);margin:0;color:var(--ink);max-width:18ch}
@@ -37,7 +38,7 @@
 <div class="panel-card">
   <div class="panel-card-head">
     <div>
-      <h2>{% if is_new %}Add a new slide{% else %}Editing: {{ slide.title }}{% endif %}</h2>
+      <h2>{% if is_new %}Add a new slide{% else %}Editing: {{ slide.title|default:"(No text — image only)" }}{% endif %}</h2>
       <p>Both text and image are fully editable.</p>
     </div>
     <a class="btn btn-ghost" href="{% url 'panel_banner_list' %}">← Back to slides</a>
@@ -47,7 +48,7 @@
   <div class="bn-mock" id="pvBannerMock"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}>
     <div class="bn-mock-inner">
       <p class="bn-mock-kicker" id="pvKicker">{{ slide.kicker }}</p>
-      <h4 class="bn-mock-title" id="pvTitle">{{ slide.title|default:"Slide title" }}</h4>
+      <h4 class="bn-mock-title" id="pvTitle">{{ slide.title }}</h4>
       <p class="bn-mock-sub" id="pvSubtitle">{{ slide.subtitle }}</p>
       <span class="bn-mock-btn" id="pvButtonText">{{ slide.button_text }}</span>
     </div>
@@ -61,7 +62,7 @@
       {% if form.kicker.errors %}<ul class="panel-errors">{% for e in form.kicker.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
-    <label><span class="panel-label-text">Title <span class="req">*</span></span>
+    <label><span class="panel-label-text">Title</span>
       {{ form.title }}
       {% if form.title.errors %}<ul class="panel-errors">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
@@ -135,13 +136,28 @@
   }
 
   bindText('id_kicker', 'pvKicker', true);
-  bindText('id_title', 'pvTitle', false);
+  bindText('id_title', 'pvTitle', true);
   bindText('id_subtitle', 'pvSubtitle', true);
   bindText('id_button_text', 'pvButtonText', true);
 
   var mock = document.getElementById('pvBannerMock');
   var fileInput = document.getElementById('id_image');
   var urlInput = document.getElementById('id_image_url');
+
+  function updateScrim() {
+    if (!mock) return;
+    var textIds = ['id_kicker', 'id_title', 'id_subtitle', 'id_button_text'];
+    var hasText = textIds.some(function (id) {
+      var el = document.getElementById(id);
+      return el && el.value.trim();
+    });
+    mock.classList.toggle('no-text', !hasText);
+  }
+  ['id_kicker', 'id_title', 'id_subtitle', 'id_button_text'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateScrim);
+  });
+  updateScrim();
 
   function applyUrl(url) {
     if (mock) mock.style.backgroundImage = url ? "url('" + url + "')" : 'none';

@@ -63,7 +63,7 @@
                 {% endif %}
                 <div>
                   {% if slide.kicker %}<div class="banner-kicker-text">{{ slide.kicker }}</div>{% endif %}
-                  <div class="banner-title-text">{{ slide.title }}</div>
+                  <div class="banner-title-text">{{ slide.title|default:"(No text — image only)" }}</div>
                 </div>
               </div>
             </td>

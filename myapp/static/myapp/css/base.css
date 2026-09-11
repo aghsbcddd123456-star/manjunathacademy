@@ -469,6 +469,7 @@ a.btn:active,button.btn:active{transform:translateY(0)}
   content:"";position:absolute;inset:0;z-index:0;
   background:var(--promo-scrim);
 }
+.promo-slide.promo-slide-notext::before{display:none}
 .promo-slide > *{position:relative;z-index:1}
 .promo-kicker{
   margin:0;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
