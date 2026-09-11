@@ -70,6 +70,12 @@
       {% if form.correct_answer.errors %}<ul class="panel-errors">{% for e in form.correct_answer.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
+    <label><span class="panel-label-text">Solution</span>
+      {{ form.solution }}
+      <p class="custom-help">Optional. Shown to students under "View Solutions" after they submit the test.</p>
+      {% if form.solution.errors %}<ul class="panel-errors">{% for e in form.solution.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
     <div class="panel-form-row question-form-row">
       <label><span class="panel-label-text">Marks</span>{{ form.marks }}</label>
       <label><span class="panel-label-text">Order</span>{{ form.order }}</label>

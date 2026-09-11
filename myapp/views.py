@@ -736,12 +736,26 @@ def _save_attempt_section_choices(attempt, course, request):
 
 def _attempt_questions(attempt):
     questions = attempt.course.questions.select_related('section')
-    if not attempt.course.test_sections.exists():
-        return questions
-    selected_ids = attempt.selected_section_ids or list(
-        attempt.course.test_sections.filter(is_optional=False).values_list('pk', flat=True)
-    )
-    return questions.filter(Q(section__isnull=True) | Q(section_id__in=selected_ids))
+    if attempt.course.test_sections.exists():
+        selected_ids = attempt.selected_section_ids or list(
+            attempt.course.test_sections.filter(is_optional=False).values_list('pk', flat=True)
+        )
+        questions = questions.filter(Q(section__isnull=True) | Q(section_id__in=selected_ids))
+
+    if attempt.question_order:
+        order_index = {qid: index for index, qid in enumerate(attempt.question_order)}
+        questions = sorted(questions, key=lambda q: order_index.get(q.pk, len(order_index)))
+    return questions
+
+
+def _create_test_attempt(user, course):
+    attempt = TestAttempt.objects.create(user=user, course=course)
+    if course.shuffle_questions:
+        question_ids = list(course.questions.values_list('pk', flat=True))
+        random.shuffle(question_ids)
+        attempt.question_order = question_ids
+        attempt.save(update_fields=['question_order'])
+    return attempt
 
 
 @login_required(login_url='login')
@@ -766,7 +780,7 @@ def classroom_test_start(request, pk):
         submitted_at__isnull=True,
     ).first()
     if request.method == 'POST':
-        attempt = existing_attempt or TestAttempt.objects.create(user=request.user, course=course)
+        attempt = existing_attempt or _create_test_attempt(request.user, course)
         _save_attempt_section_choices(attempt, course, request)
         return redirect('test_attempt_take', pk=attempt.pk)
 
@@ -1176,7 +1190,7 @@ def test_attempt_start(request, pk):
         submitted_at__isnull=True,
     ).first()
     if request.method == 'POST':
-        attempt = existing_attempt or TestAttempt.objects.create(user=request.user, course=course)
+        attempt = existing_attempt or _create_test_attempt(request.user, course)
         _save_attempt_section_choices(attempt, course, request)
         return redirect('test_attempt_take', pk=attempt.pk)
 
@@ -1220,6 +1234,7 @@ def test_attempt_take(request, pk):
                     'marks_awarded': marks_awarded,
                     'question_text_snapshot': question.text,
                     'correct_answer_snapshot': question.correct_answer,
+                    'solution_snapshot': question.solution,
                     'section_name_snapshot': question.section.name if question.section_id else 'General',
                     'question_marks_snapshot': question.marks,
                 },
@@ -3192,6 +3207,7 @@ GOOGLE_DOC_ID_RE = re.compile(r'/document/d/([a-zA-Z0-9_-]+)')
 GOOGLE_DOC_QUESTION_PREFIX_RE = re.compile(r'^\s*(?:q(?:uestion)?\s*\d*[.):]|\d+[.)])\s*', re.IGNORECASE)
 GOOGLE_DOC_OPTION_RE = re.compile(r'^\s*\(?([A-Da-d])\)?\s*[.):]\s*(.*)$')
 GOOGLE_DOC_ANSWER_RE = re.compile(r'^\s*(?:correct\s*)?answer\s*[:\-]\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_SOLUTION_RE = re.compile(r'^\s*(?:solution|explanation)\s*[:\-]\s*(.*)$', re.IGNORECASE)
 GOOGLE_DOC_MARKS_RE = re.compile(r'^\s*marks?\s*[:\-]\s*(.*)$', re.IGNORECASE)
 GOOGLE_DOC_SECTION_RE = re.compile(r'^\s*section\s*[:\-]\s*(.*)$', re.IGNORECASE)
 
@@ -3244,28 +3260,41 @@ def _parse_mcq_doc(text):
         block_num += 1
 
         question_text = None
+        solution_text = None
         options = {}
         answer_raw = None
         marks = 1
         section_name = None
+        active = 'question'
         for line in lines:
             opt_match = GOOGLE_DOC_OPTION_RE.match(line)
             answer_match = GOOGLE_DOC_ANSWER_RE.match(line)
+            solution_match = GOOGLE_DOC_SOLUTION_RE.match(line)
             marks_match = GOOGLE_DOC_MARKS_RE.match(line)
             section_match = GOOGLE_DOC_SECTION_RE.match(line)
             if opt_match:
                 options[opt_match.group(1).upper()] = opt_match.group(2).strip()
+                active = None
             elif answer_match:
                 answer_raw = answer_match.group(1).strip()
+                active = None
+            elif solution_match:
+                solution_text = solution_match.group(1).strip()
+                active = 'solution'
             elif marks_match:
                 try:
                     marks = int(marks_match.group(1).strip())
                 except ValueError:
                     pass
+                active = None
             elif section_match:
                 section_name = section_match.group(1).strip()
+                active = None
+            elif active == 'solution':
+                solution_text = f'{solution_text} {line}' if solution_text else line
             elif question_text is None:
                 question_text = GOOGLE_DOC_QUESTION_PREFIX_RE.sub('', line).strip()
+                active = 'question'
             else:
                 question_text += ' ' + line
 
@@ -3293,6 +3322,7 @@ def _parse_mcq_doc(text):
             'text': question_text,
             'options': options,
             'correct_answer': correct_letter,
+            'solution': solution_text or '',
             'marks': marks,
             'section_name': section_name,
             'warning': warning,
@@ -3376,6 +3406,7 @@ def panel_question_bulk_upload(request, course_pk):
                             option_c=q['options'].get('C', ''),
                             option_d=q['options'].get('D', ''),
                             correct_answer=q['correct_answer'],
+                            solution=q['solution'],
                             marks=q['marks'],
                             order=next_order,
                         )
@@ -3405,6 +3436,7 @@ def panel_question_bulk_template(request, course_pk):
         'C) Kolkata\n'
         'D) Chennai\n'
         'Answer: B\n'
+        'Solution: New Delhi has been the capital of India since 1911.\n'
         'Marks: 1\n'
         '\n'
         'Q2. Which planet is known as the Red Planet?\n'
@@ -3413,6 +3445,7 @@ def panel_question_bulk_template(request, course_pk):
         'C) Mars\n'
         'D) Jupiter\n'
         'Answer: C\n'
+        'Solution: Mars appears red due to iron oxide (rust) on its surface.\n'
         'Marks: 1\n'
         '\n'
         'Q3. What is 12 x 12?\n'
@@ -3421,6 +3454,7 @@ def panel_question_bulk_template(request, course_pk):
         'C) 132\n'
         'D) 148\n'
         'Answer: B\n'
+        'Solution: 12 x 12 = 144.\n'
         'Marks: 2\n'
     )
     response = HttpResponse(sample, content_type='text/plain; charset=utf-8')

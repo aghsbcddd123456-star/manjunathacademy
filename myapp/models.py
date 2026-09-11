@@ -712,6 +712,10 @@ class Course(models.Model):
         default=1,
         help_text='Maximum optional sections a student may choose before starting a Test Series exam.',
     )
+    shuffle_questions = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Randomize the question order separately for each student\'s attempt.',
+    )
     author = models.CharField(max_length=150, blank=True, help_text='Used for E-Library only.')
     pages = models.PositiveIntegerField(null=True, blank=True, help_text='Used for E-Library only — number of pages.')
     order = models.PositiveIntegerField(default=0)
@@ -968,6 +972,7 @@ class Question(models.Model):
         max_length=300, blank=True,
         help_text='Single/True-False: e.g. A or True. Multiple: comma-separated, e.g. A,C. Numeric/Fill-in-the-blank: the exact value.',
     )
+    solution = models.TextField(blank=True, help_text='Optional explanation shown to students in "View Solutions" after they submit the test.')
     marks = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     translations = models.JSONField(
@@ -990,6 +995,7 @@ class TestAttempt(models.Model):
     score = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     total_marks = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     selected_section_ids = models.JSONField(default=list, blank=True)
+    question_order = models.JSONField(default=list, blank=True, help_text='Shuffled question ID order for this attempt, when the course has shuffling enabled.')
 
     class Meta:
         ordering = ['-started_at']
@@ -1010,6 +1016,7 @@ class TestAnswer(models.Model):
     marks_awarded = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     question_text_snapshot = models.TextField(blank=True)
     correct_answer_snapshot = models.CharField(max_length=300, blank=True)
+    solution_snapshot = models.TextField(blank=True)
     section_name_snapshot = models.CharField(max_length=120, blank=True)
     question_marks_snapshot = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 

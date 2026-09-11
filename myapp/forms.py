@@ -525,7 +525,7 @@ class CourseForm(forms.ModelForm):
             'category', 'categories', 'name', 'test_type', 'original_price', 'current_price', 'force_free',
             'enable_validity', 'validity_value', 'validity_unit', 'enable_folders',
             'about', 'highlights', 'thumbnail', 'pdf_file', 'video_file',
-            'duration_minutes', 'max_optional_sections', 'author', 'pages',
+            'duration_minutes', 'max_optional_sections', 'shuffle_questions', 'author', 'pages',
             'order', 'is_active',
         )
         widgets = {
@@ -560,6 +560,7 @@ class CourseForm(forms.ModelForm):
             del self.fields['highlights']
         if course_type != Course.TEST_SERIES:
             del self.fields['max_optional_sections']
+            del self.fields['shuffle_questions']
         if course_type == Course.TEST_SERIES:
             del self.fields['category']
             self.fields['categories'].queryset = hierarchical_category_queryset()
@@ -644,7 +645,7 @@ class QuestionForm(forms.ModelForm):
         model = Question
         fields = (
             'section', 'question_type', 'text', 'option_a', 'option_b', 'option_c', 'option_d',
-            'correct_answer', 'marks', 'order',
+            'correct_answer', 'solution', 'marks', 'order',
         )
         widgets = {
             'text': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Type the question here'}),
@@ -652,6 +653,7 @@ class QuestionForm(forms.ModelForm):
             'option_b': forms.TextInput(attrs={'placeholder': 'Option B'}),
             'option_c': forms.TextInput(attrs={'placeholder': 'Option C'}),
             'option_d': forms.TextInput(attrs={'placeholder': 'Option D'}),
+            'solution': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional explanation shown to students in "View Solutions"'}),
             'marks': forms.NumberInput(attrs={'min': 1}),
             'order': forms.NumberInput(attrs={'min': 0}),
         }
