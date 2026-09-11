@@ -380,6 +380,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const dots = Array.from(dotsEl.children);
 
+    slides.forEach((slide) => {
+      const link = slide.dataset.link;
+      if (!link) return;
+      slide.addEventListener('click', (e) => {
+        if (e.target.closest('a')) return;
+        window.location.href = link;
+      });
+    });
+
     function goTo(next) {
       index = (next + slides.length) % slides.length;
       slides.forEach((s, i) => s.classList.toggle('is-active', i === index));

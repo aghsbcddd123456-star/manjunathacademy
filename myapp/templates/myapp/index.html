@@ -114,7 +114,7 @@
 
         {% if banner_slides %}
           {% for slide in banner_slides %}
-          <article class="promo-slide{% if forloop.first %} is-active{% endif %}{% if not slide.display_image_url %} promo-slide-noimg{% endif %}{% if not slide.kicker and not slide.title and not slide.subtitle and not slide.button_text %} promo-slide-notext{% endif %}"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}>
+          <article class="promo-slide{% if forloop.first %} is-active{% endif %}{% if not slide.display_image_url %} promo-slide-noimg{% endif %}{% if not slide.kicker and not slide.title and not slide.subtitle and not slide.button_text %} promo-slide-notext{% endif %}"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}{% if slide.link %} data-link="{{ slide.link }}"{% endif %}>
             {% if slide.kicker %}<p class="promo-kicker">{{ slide.kicker }}</p>{% endif %}
             {% if slide.title %}<h2 class="promo-title">{{ slide.title }}</h2>{% endif %}
             {% if slide.subtitle %}<p class="promo-sub">{{ slide.subtitle }}</p>{% endif %}

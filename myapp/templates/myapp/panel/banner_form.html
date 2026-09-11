@@ -81,6 +81,12 @@
       </label>
     </div>
 
+    <label><span class="panel-label-text">Banner link</span>
+      {{ form.link }}
+      <p class="custom-help">{{ form.link.help_text }}</p>
+      {% if form.link.errors %}<ul class="panel-errors">{% for e in form.link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
     <label><span class="panel-label-text">Upload image</span>
       {{ form.image }}
       <p class="custom-help">{{ form.image.help_text }}</p>

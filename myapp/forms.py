@@ -352,13 +352,14 @@ class NavbarCustomizationForm(forms.ModelForm):
 class BannerSlideForm(forms.ModelForm):
     class Meta:
         model = BannerSlide
-        fields = ('kicker', 'title', 'subtitle', 'button_text', 'button_link', 'image', 'image_url', 'order', 'is_active')
+        fields = ('kicker', 'title', 'subtitle', 'button_text', 'button_link', 'link', 'image', 'image_url', 'order', 'is_active')
         widgets = {
             'kicker': forms.TextInput(attrs={'placeholder': 'e.g. Admissions open'}),
             'title': forms.TextInput(attrs={'placeholder': 'e.g. New Batch Starting Soon'}),
             'subtitle': forms.TextInput(attrs={'placeholder': 'A short supporting line'}),
             'button_text': forms.TextInput(attrs={'placeholder': 'e.g. See the batch plan'}),
             'button_link': forms.TextInput(attrs={'placeholder': 'e.g. #popular-courses'}),
+            'link': forms.TextInput(attrs={'placeholder': 'e.g. #popular-courses or https://...'}),
             'image_url': forms.URLInput(attrs={'placeholder': 'https://example.com/photo.jpg'}),
             'order': forms.NumberInput(attrs={'min': 0}),
             'image': forms.FileInput(),

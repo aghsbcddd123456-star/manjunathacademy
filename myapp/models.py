@@ -154,6 +154,7 @@ class BannerSlide(models.Model):
     subtitle = models.CharField(max_length=300, blank=True)
     button_text = models.CharField(max_length=50, blank=True)
     button_link = models.CharField(max_length=300, blank=True, help_text='e.g. #popular-courses or a full https:// URL')
+    link = models.CharField(max_length=300, blank=True, help_text='Optional. Makes the whole slide clickable — opens this link when a student taps anywhere on it (outside the button). e.g. #popular-courses or a full https:// URL')
     image = models.ImageField(upload_to='banner/', blank=True, null=True, help_text='Recommended size: 1600×600px.')
     image_url = models.URLField(blank=True, help_text='Used only if no image is uploaded above')
     is_active = models.BooleanField(default=True)
