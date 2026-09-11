@@ -585,7 +585,7 @@
         <div class="ts-grid" id="tsGrid">
           {% for course in test_series_courses %}
           <article class="ts-card" data-cat-chain="{{ course.category_chain_ids|join:',' }}">
-            {% if course.thumbnail %}<img class="ts-card-thumb" src="{{ course.thumbnail.url }}" alt="" loading="lazy">{% else %}<span class="ts-course-logo">{% include "myapp/includes/category_logo.html" with icon_key=course.effective_categories.0.logo_key|default:"general" %}</span>{% endif %}
+            {% if course.thumbnail %}<img class="ts-card-thumb" src="{{ course.thumbnail.url }}" alt="" loading="lazy">{% else %}<span class="ts-course-logo">{% include "myapp/includes/category_logo.html" with icon_key=course.effective_categories.0.logo_key|default:"general" image_url=course.effective_categories.0.logo_image_url %}</span>{% endif %}
             {% if course.test_type %}<span class="ts-type-tag">{{ course.get_test_type_display }}</span>{% endif %}
             <h4>{{ course.name }}</h4>
             <span class="ts-count">📝 {{ course.questions.count }} question{{ course.questions.count|pluralize }}{% if course.duration_minutes %} · ⏱ {{ course.duration_minutes }}m{% endif %}</span>

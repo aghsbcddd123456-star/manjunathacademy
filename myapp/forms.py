@@ -450,7 +450,7 @@ class GalleryImageForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ('name', 'logo_key', 'order')
+        fields = ('name', 'logo_key', 'logo_image', 'order')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. CBSE'}),
             'order': forms.NumberInput(attrs={'min': 0}),

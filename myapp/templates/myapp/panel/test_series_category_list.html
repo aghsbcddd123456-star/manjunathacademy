@@ -49,7 +49,7 @@
       {% for root in roots %}
       <div class="taxonomy-node">
         <div class="taxonomy-node-row level-0" data-name="{{ root.name|lower }}">
-          <span class="taxonomy-node-name"><span class="taxonomy-node-level">Exam</span>{% include "myapp/includes/category_logo.html" with icon_key=root.logo_key %}{{ root.name }}</span>
+          <span class="taxonomy-node-name"><span class="taxonomy-node-level">Exam</span>{% include "myapp/includes/category_logo.html" with icon_key=root.logo_key image_url=root.logo_image_url %}{{ root.name }}</span>
           <div class="taxonomy-node-actions">
             <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ root.pk }}">+ Add sub-exam</a>
             <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_edit' root.pk %}">Edit</a>
@@ -64,7 +64,7 @@
           {% for child in root.children.all %}
           <div class="taxonomy-node">
             <div class="taxonomy-node-row level-1" data-name="{{ child.name|lower }}">
-              <span class="taxonomy-node-name"><span class="taxonomy-node-level">Sub-exam</span>{% include "myapp/includes/category_logo.html" with icon_key=child.logo_key %}{{ child.name }}</span>
+              <span class="taxonomy-node-name"><span class="taxonomy-node-level">Sub-exam</span>{% include "myapp/includes/category_logo.html" with icon_key=child.logo_key image_url=child.logo_image_url %}{{ child.name }}</span>
               <div class="taxonomy-node-actions">
                 <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ child.pk }}">+ Add subject</a>
                 <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_edit' child.pk %}">Edit</a>
@@ -79,7 +79,7 @@
               {% for grandchild in child.children.all %}
               <div class="taxonomy-node">
                 <div class="taxonomy-node-row level-2" data-name="{{ grandchild.name|lower }}">
-                  <span class="taxonomy-node-name"><span class="taxonomy-node-level">Subject</span>{% include "myapp/includes/category_logo.html" with icon_key=grandchild.logo_key %}{{ grandchild.name }}</span>
+                  <span class="taxonomy-node-name"><span class="taxonomy-node-level">Subject</span>{% include "myapp/includes/category_logo.html" with icon_key=grandchild.logo_key image_url=grandchild.logo_image_url %}{{ grandchild.name }}</span>
                   <div class="taxonomy-node-actions">
                     <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ grandchild.pk }}">+ Add topic</a>
                     <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_edit' grandchild.pk %}">Edit</a>
@@ -93,7 +93,7 @@
                 <div class="taxonomy-greatgrandchildren">
                   {% for topic in grandchild.children.all %}
                   <div class="taxonomy-node-row level-3" data-name="{{ topic.name|lower }}">
-                    <span class="taxonomy-node-name"><span class="taxonomy-node-level">Topic</span>{% include "myapp/includes/category_logo.html" with icon_key=topic.logo_key %}{{ topic.name }}</span>
+                    <span class="taxonomy-node-name"><span class="taxonomy-node-level">Topic</span>{% include "myapp/includes/category_logo.html" with icon_key=topic.logo_key image_url=topic.logo_image_url %}{{ topic.name }}</span>
                     <div class="taxonomy-node-actions">
                       <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_edit' topic.pk %}">Edit</a>
                       <form method="post" action="{% url 'panel_test_series_category_delete' topic.pk %}" onsubmit="return confirm('Delete this topic?');">

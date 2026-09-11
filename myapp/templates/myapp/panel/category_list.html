@@ -48,7 +48,7 @@
           {% for category in categories %}
           <tr data-name="{{ category.name|lower }}">
             <td>{{ category.order }}</td>
-            <td class="panel-row-name"><span class="category-name-cell">{% include "myapp/includes/category_logo.html" with icon_key=category.logo_key %}<span>{{ category.name }}<small style="display:block;color:var(--muted);font-weight:500">{{ category.get_logo_key_display }}</small></span></span></td>
+            <td class="panel-row-name"><span class="category-name-cell">{% include "myapp/includes/category_logo.html" with icon_key=category.logo_key image_url=category.logo_image_url %}<span>{{ category.name }}<small style="display:block;color:var(--muted);font-weight:500">{% if category.logo_image %}Custom image{% else %}{{ category.get_logo_key_display }}{% endif %}</small></span></span></td>
             <td>{{ category.courses.count }}</td>
             <td>
               <div class="category-actions">

@@ -1,3 +1,8 @@
+{% if image_url %}
+<span class="category-logo category-logo-custom" aria-hidden="true">
+  <img src="{{ image_url }}" alt="" loading="lazy" decoding="async">
+</span>
+{% else %}
 <span class="category-logo category-logo-{{ icon_key|default:'general' }}" aria-hidden="true">
   <svg viewBox="0 0 64 64" focusable="false">
     {% if icon_key == 'school' %}
@@ -45,3 +50,4 @@
     {% endif %}
   </svg>
 </span>
+{% endif %}

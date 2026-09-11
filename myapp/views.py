@@ -2668,7 +2668,7 @@ def panel_category_list(request):
 @user_passes_test(_is_staff, login_url='login')
 def panel_category_add(request):
     if request.method == 'POST':
-        form = CategoryForm(request.POST)
+        form = CategoryForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, 'Category added')
@@ -2685,7 +2685,7 @@ def panel_category_edit(request, pk):
     category = get_object_or_404(Category, pk=pk)
 
     if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=category)
+        form = CategoryForm(request.POST, request.FILES, instance=category)
         if form.is_valid():
             form.save()
             messages.success(request, 'Category updated')
@@ -2730,7 +2730,7 @@ def _taxonomy_parent_or_404(parent_id):
 def panel_test_series_category_add(request):
     parent = _taxonomy_parent_or_404(request.GET.get('parent') or request.POST.get('parent'))
     if request.method == 'POST':
-        form = CategoryForm(request.POST)
+        form = CategoryForm(request.POST, request.FILES)
         if form.is_valid():
             category = form.save(commit=False)
             category.parent = parent
@@ -2747,7 +2747,7 @@ def panel_test_series_category_add(request):
 def panel_test_series_category_edit(request, pk):
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=category)
+        form = CategoryForm(request.POST, request.FILES, instance=category)
         if form.is_valid():
             form.save()
             messages.success(request, 'Exam category updated')
@@ -2781,7 +2781,7 @@ def _category_tree(queryset=None):
     nodes = {
         c.pk: {
             'id': c.pk, 'name': c.name, 'logo_key': c.logo_key, 'parent_id': c.parent_id, 'children': [],
-            'icon_html': render_to_string('myapp/includes/category_logo.html', {'icon_key': c.logo_key}),
+            'icon_html': render_to_string('myapp/includes/category_logo.html', {'icon_key': c.logo_key, 'image_url': c.logo_image_url}),
         }
         for c in queryset.order_by('order', 'name')
     }

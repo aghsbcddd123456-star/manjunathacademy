@@ -612,6 +612,10 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     icon = models.CharField(max_length=10, blank=True, help_text='Optional emoji icon, e.g. 📘')
     logo_key = models.CharField(max_length=20, choices=LOGO_CHOICES, default='general')
+    logo_image = models.ImageField(
+        upload_to='category_logos/', max_length=500, blank=True, null=True,
+        help_text='Optional custom logo image. If uploaded, it is shown instead of the illustrated icon above.',
+    )
     order = models.PositiveIntegerField(default=0)
     parent = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.CASCADE, related_name='children',
@@ -624,6 +628,10 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def logo_image_url(self):
+        return self.logo_image.url if self.logo_image else ''
 
     def get_ancestors(self):
         chain = []

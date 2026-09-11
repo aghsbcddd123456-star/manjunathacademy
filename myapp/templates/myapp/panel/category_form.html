@@ -7,6 +7,13 @@
 
 {% block extra_style %}
 .custom-help{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.file-field-box{
+  background:#FAFAF9;border:1px dashed var(--line);border-radius:12px;padding:14px 16px;
+  font-size:13.5px;color:#374151;line-height:1.9;
+}
+.file-field-box input[type="file"]{display:block;margin-top:6px;font-size:13.5px}
+.category-logo-preview{display:flex;align-items:center;gap:14px;margin-top:10px;padding:14px;background:#FAFAF9;border:1px dashed var(--line);border-radius:12px}
+.category-logo-preview img{width:56px;height:56px;border-radius:12px;object-fit:cover;background:#fff;border:1px solid var(--line)}
 {% endblock %}
 
 {% block content %}
@@ -19,7 +26,7 @@
     <a class="btn btn-ghost" href="{% url 'panel_category_list' %}">← Back to categories</a>
   </div>
 
-  <form class="panel-form" method="post" novalidate>
+  <form class="panel-form" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
     <label><span class="panel-label-text">Name <span class="req">*</span></span>
@@ -31,6 +38,19 @@
       {{ form.logo_key }}
       <p class="custom-help">Choose the illustrated logo shown in Test Series filters and cards.</p>
     </label>
+
+    <label><span class="panel-label-text">Or upload a custom logo image</span>
+      <div class="file-field-box">{{ form.logo_image }}</div>
+      <p class="custom-help">Optional. If uploaded, this image is shown instead of the illustrated logo above.{% if category.logo_image %} Uploading a new image replaces the current one.{% endif %}</p>
+      {% if form.logo_image.errors %}<ul class="panel-errors">{% for e in form.logo_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
+    {% if category.logo_image %}
+      <div class="category-logo-preview">
+        <img loading="lazy" decoding="async" src="{{ category.logo_image.url }}" alt="Current logo">
+        <span class="custom-help" style="margin:0">Current custom logo. Tick "Clear" above and save to remove it.</span>
+      </div>
+    {% endif %}
 
     <label><span class="panel-label-text">Order</span>
       {{ form.order }}
