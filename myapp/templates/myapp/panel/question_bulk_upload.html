@@ -11,6 +11,9 @@
 .bulk-upload-form input[type="url"]:focus{outline:2px solid var(--orange);outline-offset:1px}
 .bulk-upload-form select{display:block;width:100%;margin-top:8px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:#fff}
 .bulk-upload-form select:focus{outline:2px solid var(--orange);outline-offset:1px}
+.bulk-upload-or{align-self:center;padding-bottom:11px;font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.bulk-upload-form .file-field-box{margin-top:8px;padding:9px 12px;border:1px dashed var(--line);border-radius:10px;background:#fff;font-size:13px}
+.bulk-upload-form .file-field-box input[type="file"]{max-width:100%;font-size:13px}
 .bulk-results{margin-top:18px;padding:16px 18px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0}
 .bulk-results h4{margin:0 0 8px;font-size:14px;color:#166534}
 .bulk-results ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
@@ -45,11 +48,16 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
 
-  <form class="bulk-upload-form" method="post">
+  <form class="bulk-upload-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <label style="flex:1;min-width:280px">
+    <label style="flex:1;min-width:260px">
       <span class="panel-label-text">Google Docs link</span>
-      <input type="url" name="doc_url" placeholder="https://docs.google.com/document/d/..." required>
+      <input type="url" name="doc_url" placeholder="https://docs.google.com/document/d/...">
+    </label>
+    <span class="bulk-upload-or">or</span>
+    <label style="flex:1;min-width:220px">
+      <span class="panel-label-text">Upload a .docx / .txt file</span>
+      <div class="file-field-box"><input type="file" name="doc_file" accept=".docx,.txt"></div>
     </label>
     <label style="min-width:220px">
       <span class="panel-label-text">Upload into section</span>
@@ -62,7 +70,7 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
     <button type="submit" class="btn btn-primary">Upload questions</button>
     <a class="btn btn-ghost" href="{% url 'panel_question_bulk_template' course.pk %}">⬇ Download sample format</a>
   </form>
-  <p class="custom-help" style="margin-top:10px">Open the doc's <strong>Share</strong> menu and set general access to "Anyone with the link can view", then paste its link above. Pick a section here to put every question into that one section — this overrides each question's own <code>Section:</code> line. Leave it on the first option to use whatever each question's <code>Section:</code> line says.</p>
+  <p class="custom-help" style="margin-top:10px">Either paste a Google Docs link (open the doc's <strong>Share</strong> menu and set general access to "Anyone with the link can view" first) or upload a <code>.docx</code>/<code>.txt</code> file exported from Google Docs via File → Download. Pick a section here to put every question into that one section — this overrides each question's own <code>Section:</code> line. Leave it on the first option to use whatever each question's <code>Section:</code> line says.</p>
 
   {% if results %}
   <div class="bulk-results">

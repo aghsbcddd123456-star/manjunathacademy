@@ -9,6 +9,8 @@ import urllib.request
 import uuid
 from datetime import datetime
 
+import docx
+
 from django.core import signing
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -3213,6 +3215,21 @@ def _fetch_google_doc_text(doc_id):
         return resp.read().decode('utf-8-sig')
 
 
+def _extract_text_from_doc_upload(upload):
+    """Return plain text from an uploaded .docx or .txt file (as exported from Google Docs's File > Download menu)."""
+    name = (upload.name or '').lower()
+    if name.endswith('.docx'):
+        document = docx.Document(upload)
+        return '\n'.join(p.text for p in document.paragraphs)
+    if name.endswith('.txt'):
+        raw = upload.read()
+        try:
+            return raw.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            return raw.decode('latin-1')
+    raise ValueError('Please upload a .docx or .txt file (exported from Google Docs via File → Download).')
+
+
 def _parse_mcq_doc(text):
     """Parse Q / A-D / Answer blocks (blank-line separated) into MCQ dicts, plus a list of block-level errors."""
     questions = []
@@ -3292,7 +3309,8 @@ def panel_question_bulk_upload(request, course_pk):
     results = None
 
     if request.method == 'POST':
-        doc_url = request.POST.get('doc_url', '')
+        doc_url = request.POST.get('doc_url', '').strip()
+        doc_file = request.FILES.get('doc_file')
         target_section_choice = request.POST.get('target_section', '')
         forced_section = 'unset'
         if target_section_choice == 'unassigned':
@@ -3300,20 +3318,30 @@ def panel_question_bulk_upload(request, course_pk):
         elif target_section_choice.isdigit():
             forced_section = next((s for s in sections_by_name.values() if s.pk == int(target_section_choice)), None)
 
-        doc_id = _extract_google_doc_id(doc_url)
         text = None
-        if not doc_id:
-            messages.error(request, 'Please paste a valid Google Docs link (from the Share menu).')
-        else:
+        if doc_file:
             try:
-                text = _fetch_google_doc_text(doc_id)
-            except urllib.error.HTTPError as exc:
-                if exc.code in (401, 403, 404):
-                    messages.error(request, 'Could not access that document — open Share → General access and set it to "Anyone with the link can view", then try again.')
-                else:
-                    messages.error(request, f'Could not fetch that document (HTTP {exc.code}). Check the link and try again.')
-            except urllib.error.URLError:
-                messages.error(request, 'Could not reach Google Docs. Check your connection and try again.')
+                text = _extract_text_from_doc_upload(doc_file)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            except Exception:
+                messages.error(request, 'Could not read that file. Make sure it is a valid .docx or .txt file and try again.')
+        elif doc_url:
+            doc_id = _extract_google_doc_id(doc_url)
+            if not doc_id:
+                messages.error(request, 'Please paste a valid Google Docs link (from the Share menu).')
+            else:
+                try:
+                    text = _fetch_google_doc_text(doc_id)
+                except urllib.error.HTTPError as exc:
+                    if exc.code in (401, 403, 404):
+                        messages.error(request, 'Could not access that document — open Share → General access and set it to "Anyone with the link can view", then try again.')
+                    else:
+                        messages.error(request, f'Could not fetch that document (HTTP {exc.code}). Check the link and try again.')
+                except urllib.error.URLError:
+                    messages.error(request, 'Could not reach Google Docs. Check your connection and try again.')
+        else:
+            messages.error(request, 'Please paste a Google Docs link or upload a .docx/.txt file.')
 
         if text is not None:
             parsed_questions, parse_errors = _parse_mcq_doc(text)
