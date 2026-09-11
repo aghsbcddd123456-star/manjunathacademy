@@ -38,8 +38,12 @@
       <label><span class="panel-label-text">Gender</span>{{ form.gender }}</label>
     </div>
     <div class="panel-form-row">
-      <label><span class="panel-label-text">State</span>{{ form.state }}</label>
-      <label><span class="panel-label-text">City</span>{{ form.city }}</label>
+      <label><span class="panel-label-text">State</span>{{ form.state }}
+        <div style="margin-top:8px" data-toggle-other="id_state" hidden>{{ form.state_other }}{% if form.state_other.errors %}<ul class="panel-errors">{% for e in form.state_other.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+      </label>
+      <label><span class="panel-label-text">City</span>{{ form.city }}
+        <div style="margin-top:8px" data-toggle-other="id_city" hidden>{{ form.city_other }}{% if form.city_other.errors %}<ul class="panel-errors">{% for e in form.city_other.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+      </label>
     </div>
     <div class="panel-form-row">
       <label><span class="panel-label-text">Signup device</span>{{ form.device_type }}</label>
@@ -53,4 +57,14 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_script %}
+document.querySelectorAll('[data-toggle-other]').forEach(function (field) {
+  var select = document.getElementById(field.dataset.toggleOther);
+  if (!select) return;
+  function sync() { field.hidden = select.value !== 'Other'; }
+  select.addEventListener('change', sync);
+  sync();
+});
 {% endblock %}

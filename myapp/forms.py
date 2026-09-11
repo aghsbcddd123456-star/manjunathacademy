@@ -170,7 +170,50 @@ CITY_CHOICES = [
 ]
 
 
-class SignupForm(UserCreationForm):
+class StateCityOtherMixin:
+    """Adds free-text 'state_other'/'city_other' fields so picking "Other" in the dropdown can be replaced with a typed name."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'state' in self.fields:
+            self.fields['state_other'] = forms.CharField(
+                required=False, max_length=100,
+                widget=forms.TextInput(attrs={'placeholder': 'Enter your state name', 'class': 'state-other-input'}),
+            )
+        if 'city' in self.fields:
+            self.fields['city_other'] = forms.CharField(
+                required=False, max_length=100,
+                widget=forms.TextInput(attrs={'placeholder': 'Enter your city name', 'class': 'city-other-input'}),
+            )
+
+        # Editing an existing record whose saved state/city isn't in the dropdown: show it as "Other" with the typed value prefilled.
+        instance = getattr(self, 'instance', None)
+        if instance is not None and instance.pk:
+            if 'state' in self.fields and instance.state and instance.state not in dict(STATE_CHOICES):
+                self.initial['state'] = 'Other'
+                self.initial['state_other'] = instance.state
+            if 'city' in self.fields and instance.city and instance.city not in dict(CITY_CHOICES):
+                self.initial['city'] = 'Other'
+                self.initial['city_other'] = instance.city
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if 'state_other' in self.fields and cleaned_data.get('state') == 'Other':
+            custom_state = (cleaned_data.get('state_other') or '').strip()
+            if custom_state:
+                cleaned_data['state'] = custom_state
+            else:
+                self.add_error('state_other', 'Please enter your state.')
+        if 'city_other' in self.fields and cleaned_data.get('city') == 'Other':
+            custom_city = (cleaned_data.get('city_other') or '').strip()
+            if custom_city:
+                cleaned_data['city'] = custom_city
+            else:
+                self.add_error('city_other', 'Please enter your city.')
+        return cleaned_data
+
+
+class SignupForm(StateCityOtherMixin, UserCreationForm):
     referral_code = forms.CharField(
         required=False, max_length=20,
         widget=forms.TextInput(attrs={'placeholder': 'Referral code (optional)'}),
@@ -214,7 +257,7 @@ class EmailAuthenticationForm(AuthenticationForm):
         self.fields['password'].widget.attrs['placeholder'] = 'Your password'
 
 
-class AccountUpdateForm(forms.ModelForm):
+class AccountUpdateForm(StateCityOtherMixin, forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('profile_picture', 'name', 'number', 'age', 'gender', 'state', 'city')
@@ -241,7 +284,7 @@ class AccountUpdateForm(forms.ModelForm):
         self.fields['city'].required = False
 
 
-class PanelSignupEditForm(forms.ModelForm):
+class PanelSignupEditForm(StateCityOtherMixin, forms.ModelForm):
     new_password = forms.CharField(
         required=False,
         min_length=8,
@@ -1337,7 +1380,7 @@ class EligibilityCriteriaForm(forms.ModelForm):
         }
 
 
-class EligibilityCheckForm(forms.Form):
+class EligibilityCheckForm(StateCityOtherMixin, forms.Form):
     nationality = forms.ChoiceField(choices=[('indian', 'Indian citizen'), ('other', 'Other nationality')])
     education = forms.ChoiceField(choices=EligibilityCriteria.EDUCATION_CHOICES)
     category = forms.ChoiceField(choices=[('general', 'General / UR'), ('obc', 'OBC-NCL'), ('sc', 'Scheduled Caste (SC)'), ('st', 'Scheduled Tribe (ST)'), ('ews', 'EWS')])

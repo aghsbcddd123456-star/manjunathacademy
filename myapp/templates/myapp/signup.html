@@ -38,6 +38,7 @@
   outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(249,115,22,.14);
 }
 .auth-errors{color:#DC2626;font-size:12.5px;margin:2px 0 0;padding:0;list-style:none}
+.auth-other-field{margin-top:8px}
 .auth-form label:has(.auth-errors) input{border-color:#DC2626}
 .auth-footer{text-align:center;margin:14px 0 0;font-size:13.5px;color:var(--muted)}
 .auth-footer a{color:var(--orange);font-weight:700}
@@ -126,12 +127,14 @@
           </label>
           <label><span class="auth-label-text">State</span>
             {{ form.state }}
+            <div class="auth-other-field" data-toggle-other="id_state" hidden>{{ form.state_other }}{% if form.state_other.errors %}<ul class="auth-errors">{% for e in form.state_other.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
           </label>
         </div>
 
         <div class="auth-row">
           <label><span class="auth-label-text">City</span>
             {{ form.city }}
+            <div class="auth-other-field" data-toggle-other="id_city" hidden>{{ form.city_other }}{% if form.city_other.errors %}<ul class="auth-errors">{% for e in form.city_other.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
           </label>
           <label><span class="auth-label-text">🎁 Referral code</span>
             {{ form.referral_code }}

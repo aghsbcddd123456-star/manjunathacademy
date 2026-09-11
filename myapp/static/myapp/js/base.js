@@ -889,5 +889,14 @@ document.addEventListener('DOMContentLoaded', function () {
       chatBody.scrollTop = chatBody.scrollHeight;
     });
   }
+
+  /* ---------- "Other" state/city reveal fields ---------- */
+  document.querySelectorAll('[data-toggle-other]').forEach((field) => {
+    const select = document.getElementById(field.dataset.toggleOther);
+    if (!select) return;
+    const sync = () => { field.hidden = select.value !== 'Other'; };
+    select.addEventListener('change', sync);
+    sync();
+  });
 });
 

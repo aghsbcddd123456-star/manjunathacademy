@@ -22,6 +22,7 @@
 .elig-form-grid select,.elig-form-grid input{width:100%;border:1px solid var(--line);border-radius:3px;padding:11px 12px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--white)}
 .elig-form-grid select:focus,.elig-form-grid input:focus{outline:2px solid #1769AA;outline-offset:1px;border-color:#1769AA}
 .elig-errors{color:#DC2626;font-size:12.5px;margin:2px 0 0;padding:0;list-style:none}
+.elig-other-field{margin-top:8px}
 .elig-declaration{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text-secondary);margin:2px 0 20px}.elig-declaration input{margin-top:2px;accent-color:#1769AA}
 .elig-submit-row{display:flex;justify-content:flex-end}.elig-submit{border-radius:4px;background:#E86F10;box-shadow:none;padding-inline:34px}
 .elig-result{margin:0 26px 28px;padding:22px;border:1px solid var(--line);background:var(--surface-3)}
@@ -62,7 +63,9 @@
           <legend>Qualification and Address</legend>
           <div class="elig-form-grid">
             <label><span>Highest Educational Qualification</span>{{ form.education }}{% if form.education.errors %}<ul class="elig-errors">{% for e in form.education.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</label>
-            <label><span>State / Union Territory</span>{{ form.state }}</label>
+            <label><span>State / Union Territory</span>{{ form.state }}
+              <div class="elig-other-field" data-toggle-other="id_state" hidden>{{ form.state_other }}{% if form.state_other.errors %}<ul class="elig-errors">{% for e in form.state_other.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+            </label>
             <label class="is-optional"><span>District (optional)</span>{{ form.district }}</label>
           </div>
         </fieldset>
