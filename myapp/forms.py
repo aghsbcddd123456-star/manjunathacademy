@@ -328,7 +328,7 @@ class PanelSignupEditForm(StateCityOtherMixin, forms.ModelForm):
 class NavbarCustomizationForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
-        fields = ('logo_type', 'logo_image', 'favicon', 'facebook_url', 'instagram_url', 'youtube_url', 'whatsapp_number')
+        fields = ('logo_type', 'logo_image', 'admin_logo_image', 'favicon', 'facebook_url', 'instagram_url', 'youtube_url', 'whatsapp_number')
         widgets = {
             'logo_type': forms.RadioSelect(),
             'facebook_url': forms.URLInput(attrs={'placeholder': 'https://facebook.com/yourpage'}),
@@ -336,10 +336,12 @@ class NavbarCustomizationForm(forms.ModelForm):
             'youtube_url': forms.URLInput(attrs={'placeholder': 'https://youtube.com/@yourchannel'}),
             'whatsapp_number': forms.TextInput(attrs={'placeholder': 'e.g. 915220000000'}),
             'logo_image': forms.FileInput(),
+            'admin_logo_image': forms.FileInput(),
             'favicon': forms.FileInput(),
         }
         help_texts = {
-            'logo_image': 'Recommended size: 200×60px (transparent PNG works best). Max 1MB.',
+            'logo_image': 'Recommended size: 200×60px (transparent PNG works best). Max 1MB. Also used for the loading screen, and for the admin panel sidebar unless you upload a separate logo below.',
+            'admin_logo_image': 'Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there.',
             'favicon': 'Recommended size: 512×512px, square PNG or ICO. Shown in the browser tab.',
             'whatsapp_number': 'Digits only, with country code, no + or spaces (e.g. 915220000000).',
         }

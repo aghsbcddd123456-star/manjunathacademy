@@ -123,7 +123,7 @@ a.btn:active,button.btn:active{transform:translateY(0)}
 }
 .preloader.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 .preloader-crest{width:74px;height:74px;animation:crest-pulse 1.4s ease-in-out infinite}
-.preloader-crest svg{width:100%;height:100%}
+.preloader-crest svg,.preloader-crest img{width:100%;height:100%;object-fit:contain}
 .preloader-word{
   color:#F7DE9A;font-family:"Archivo",sans-serif;font-weight:800;letter-spacing:.22em;
   font-size:12px;text-transform:uppercase;opacity:.9;

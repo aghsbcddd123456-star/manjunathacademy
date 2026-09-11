@@ -2,7 +2,7 @@
 
 {% block title %}Navbar Customization{% endblock %}
 {% block page_title %}Navbar Customization{% endblock %}
-{% block page_sub %}Control the logo, favicon and social links shown in the site header{% endblock %}
+{% block page_sub %}Control the logo, favicon and social links shown in the site header, loading screen and admin panel{% endblock %}
 {% block nav_customization %}is-active{% endblock %}
 {% block nav_customization_open %}is-open{% endblock %}
 {% block nav_navbar_customization %}is-active{% endblock %}
@@ -76,7 +76,7 @@
 
     <div class="custom-section">
       <h3>Logo</h3>
-      <p class="custom-section-sub">Choose whether the header shows a text wordmark or an uploaded image logo.</p>
+      <p class="custom-section-sub">Choose whether the header (and loading screen) shows a text wordmark or an uploaded image logo.</p>
 
       <div class="custom-radio-row" id="logoTypeRow">
         {% for radio in form.logo_type %}
@@ -93,6 +93,26 @@
           <div class="custom-preview">
             <img loading="lazy" decoding="async" src="{{ site_settings.logo_image.url }}" alt="Current logo">
             <span class="custom-preview-label">Current logo</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <hr class="custom-divider">
+
+    <div class="custom-section">
+      <h3>Admin panel logo</h3>
+      <p class="custom-section-sub">Optional. Shown in the admin panel sidebar instead of the logo above — useful if the header logo doesn't suit a dark sidebar.</p>
+
+      <div class="custom-field">
+        <label>Admin panel logo image</label>
+        {{ form.admin_logo_image }}
+        <p class="custom-help">{{ form.admin_logo_image.help_text }}</p>
+        {% if form.admin_logo_image.errors %}<ul class="panel-errors">{% for e in form.admin_logo_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        {% if site_settings.admin_logo_image %}
+          <div class="custom-preview" style="background:#1A1620">
+            <img loading="lazy" decoding="async" src="{{ site_settings.admin_logo_image.url }}" alt="Current admin panel logo">
+            <span class="custom-preview-label" style="color:#E7E3DF">Current admin panel logo</span>
           </div>
         {% endif %}
       </div>

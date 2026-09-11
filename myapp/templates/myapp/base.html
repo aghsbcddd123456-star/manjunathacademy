@@ -124,26 +124,32 @@ input,select,textarea,button{max-width:100%}
 {% block preloader %}
 <!-- ================= LOADER (logo animation, no spinner) ================= -->
 <div class="preloader" id="preloader">
-  <span class="preloader-crest">
-    <svg viewBox="0 0 100 100" role="img" aria-label="Loading">
-      <defs>
-        <linearGradient id="goldLoad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#F7DE9A"/>
-          <stop offset=".5" stop-color="#D4A73C"/>
-          <stop offset="1" stop-color="#9C6B14"/>
-        </linearGradient>
-      </defs>
-      <circle cx="50" cy="50" r="48" fill="url(#goldLoad)"/>
-      <circle cx="50" cy="50" r="41" fill="#141019"/>
-      <circle cx="50" cy="50" r="38" fill="none" stroke="url(#goldLoad)" stroke-width="1.5"/>
-      <path d="M50 40 C40 28 26 26 16 32 c10 1 15 6 18 11 -7-2-12-1-16 2 8 1 13 4 17 9 6 7 11 10 15 11z" fill="url(#goldLoad)"/>
-      <path d="M50 40 C60 28 74 26 84 32 c-10 1-15 6-18 11 7-2 12-1 16 2-8 1-13 4-17 9-6 7-11 10-15 11z" fill="url(#goldLoad)"/>
-      <path d="M50 30 c4 0 7 3 7 7 0 3-2 5-4 6l6 3-9 2 3 24-3 4-3-4 3-24-9-2 6-3c-2-1-4-3-4-6 0-4 3-7 7-7z" fill="url(#goldLoad)"/>
-      <path d="M57 36 l7 2-7 3z" fill="#F7DE9A"/>
-      <path d="M28 72 c8-4 15-4 22-1 7-3 14-3 22 1-8 5-15 5-22 2-7 3-14 3-22-2z" fill="url(#goldLoad)"/>
-    </svg>
-  </span>
-  <span class="preloader-word">MANJUNATH ACADEMY</span>
+  {% if site_settings.logo_type == 'image' and site_settings.logo_image %}
+    <span class="preloader-crest">
+      <img src="{{ site_settings.logo_image.url }}" alt="Loading">
+    </span>
+  {% else %}
+    <span class="preloader-crest">
+      <svg viewBox="0 0 100 100" role="img" aria-label="Loading">
+        <defs>
+          <linearGradient id="goldLoad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F7DE9A"/>
+            <stop offset=".5" stop-color="#D4A73C"/>
+            <stop offset="1" stop-color="#9C6B14"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#goldLoad)"/>
+        <circle cx="50" cy="50" r="41" fill="#141019"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="url(#goldLoad)" stroke-width="1.5"/>
+        <path d="M50 40 C40 28 26 26 16 32 c10 1 15 6 18 11 -7-2-12-1-16 2 8 1 13 4 17 9 6 7 11 10 15 11z" fill="url(#goldLoad)"/>
+        <path d="M50 40 C60 28 74 26 84 32 c-10 1-15 6-18 11 7-2 12-1 16 2-8 1-13 4-17 9-6 7-11 10-15 11z" fill="url(#goldLoad)"/>
+        <path d="M50 30 c4 0 7 3 7 7 0 3-2 5-4 6l6 3-9 2 3 24-3 4-3-4 3-24-9-2 6-3c-2-1-4-3-4-6 0-4 3-7 7-7z" fill="url(#goldLoad)"/>
+        <path d="M57 36 l7 2-7 3z" fill="#F7DE9A"/>
+        <path d="M28 72 c8-4 15-4 22-1 7-3 14-3 22 1-8 5-15 5-22 2-7 3-14 3-22-2z" fill="url(#goldLoad)"/>
+      </svg>
+    </span>
+    <span class="preloader-word">MANJUNATH ACADEMY</span>
+  {% endif %}
 </div>
 {% endblock %}
 

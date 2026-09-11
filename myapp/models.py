@@ -81,7 +81,11 @@ class SiteSettings(models.Model):
     ]
 
     logo_type = models.CharField(max_length=10, choices=LOGO_TYPE_CHOICES, default=LOGO_TEXT)
-    logo_image = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 200×60px, transparent PNG.')
+    logo_image = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 200×60px, transparent PNG. Also used for the loading screen and (unless a separate admin panel logo is set below) the admin panel sidebar.')
+    admin_logo_image = models.ImageField(
+        upload_to='branding/', blank=True, null=True,
+        help_text='Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there.',
+    )
     favicon = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 512×512px, square PNG.')
     youtube_url = models.URLField(blank=True)
     whatsapp_number = models.CharField(max_length=15, blank=True, help_text='Digits only, with country code, e.g. 915220000000')
@@ -116,6 +120,15 @@ class SiteSettings(models.Model):
     @property
     def whatsapp_link(self):
         return f'https://wa.me/{self.whatsapp_number}' if self.whatsapp_number else ''
+
+    @property
+    def effective_admin_logo_image(self):
+        """Admin panel logo: the dedicated upload if set, else the header logo (when it's an image), else nothing."""
+        if self.admin_logo_image:
+            return self.admin_logo_image
+        if self.logo_type == self.LOGO_IMAGE and self.logo_image:
+            return self.logo_image
+        return None
 
     def __str__(self):
         return 'Site settings'

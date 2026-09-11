@@ -52,6 +52,7 @@ h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;letter-spacing:-.01
 .panel-brand{display:flex;align-items:center;gap:11px;padding:0 8px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:18px;transition:opacity .15s ease}
 .panel-brand:hover{opacity:.82}
 .panel-crest{width:34px;height:34px;flex:0 0 auto;filter:drop-shadow(0 4px 10px rgba(212,167,60,.3))}
+.panel-crest img{width:100%;height:100%;object-fit:contain}
 .panel-brand-text{font-family:"Archivo",sans-serif;font-weight:800;font-size:14px;line-height:1.2;letter-spacing:.02em;color:#F3F4F6}
 .panel-brand-text span{display:block}
 .panel-brand-text span:last-child{color:var(--orange);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
@@ -361,24 +362,30 @@ html{overflow-x:hidden}
   <div class="panel-sidebar-backdrop" id="panelSidebarBackdrop"></div>
   <aside class="panel-sidebar" id="panelSidebar">
     <a class="panel-brand" href="{% url 'index' %}" title="Go to homepage">
-      <span class="panel-crest" aria-hidden="true">
-        <svg viewBox="0 0 100 100" role="img">
-          <defs>
-            <linearGradient id="pgold" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#F7DE9A"/>
-              <stop offset=".5" stop-color="#D4A73C"/>
-              <stop offset="1" stop-color="#9C6B14"/>
-            </linearGradient>
-          </defs>
-          <circle cx="50" cy="50" r="48" fill="url(#pgold)"/>
-          <circle cx="50" cy="50" r="41" fill="#141019"/>
-          <circle cx="50" cy="50" r="38" fill="none" stroke="url(#pgold)" stroke-width="1.5"/>
-          <path d="M50 40 C40 28 26 26 16 32 c10 1 15 6 18 11 -7-2-12-1-16 2 8 1 13 4 17 9 6 7 11 10 15 11z" fill="url(#pgold)"/>
-          <path d="M50 40 C60 28 74 26 84 32 c-10 1-15 6-18 11 7-2 12-1 16 2-8 1-13 4-17 9-6 7-11 10-15 11z" fill="url(#pgold)"/>
-          <path d="M50 30 c4 0 7 3 7 7 0 3-2 5-4 6l6 3-9 2 3 24-3 4-3-4 3-24-9-2 6-3c-2-1-4-3-4-6 0-4 3-7 7-7z" fill="url(#pgold)"/>
-          <path d="M28 72 c8-4 15-4 22-1 7-3 14-3 22 1-8 5-15 5-22 2-7 3-14 3-22-2z" fill="url(#pgold)"/>
-        </svg>
-      </span>
+      {% if site_settings.effective_admin_logo_image %}
+        <span class="panel-crest" aria-hidden="true">
+          <img src="{{ site_settings.effective_admin_logo_image.url }}" alt="">
+        </span>
+      {% else %}
+        <span class="panel-crest" aria-hidden="true">
+          <svg viewBox="0 0 100 100" role="img">
+            <defs>
+              <linearGradient id="pgold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#F7DE9A"/>
+                <stop offset=".5" stop-color="#D4A73C"/>
+                <stop offset="1" stop-color="#9C6B14"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="48" fill="url(#pgold)"/>
+            <circle cx="50" cy="50" r="41" fill="#141019"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="url(#pgold)" stroke-width="1.5"/>
+            <path d="M50 40 C40 28 26 26 16 32 c10 1 15 6 18 11 -7-2-12-1-16 2 8 1 13 4 17 9 6 7 11 10 15 11z" fill="url(#pgold)"/>
+            <path d="M50 40 C60 28 74 26 84 32 c-10 1-15 6-18 11 7-2 12-1 16 2-8 1-13 4-17 9-6 7-11 10-15 11z" fill="url(#pgold)"/>
+            <path d="M50 30 c4 0 7 3 7 7 0 3-2 5-4 6l6 3-9 2 3 24-3 4-3-4 3-24-9-2 6-3c-2-1-4-3-4-6 0-4 3-7 7-7z" fill="url(#pgold)"/>
+            <path d="M28 72 c8-4 15-4 22-1 7-3 14-3 22 1-8 5-15 5-22 2-7 3-14 3-22-2z" fill="url(#pgold)"/>
+          </svg>
+        </span>
+      {% endif %}
       <span class="panel-brand-text"><span>MANJUNATH</span><span>Admin Panel</span></span>
     </a>
 
