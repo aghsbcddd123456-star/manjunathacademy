@@ -84,11 +84,11 @@ class SiteSettings(models.Model):
     logo_image = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 200×60px, transparent PNG. Also used for the loading screen and admin panel sidebar, unless separate logos are set for them below.')
     loader_logo_image = models.ImageField(
         upload_to='branding/', blank=True, null=True,
-        help_text='Optional — shown on the loading screen instead of the logo above. Leave blank to reuse it there.',
+        help_text='Optional — shown on the loading screen instead of the logo above. Leave blank to reuse it there. Recommended size: 200×200px, transparent PNG.',
     )
     admin_logo_image = models.ImageField(
         upload_to='branding/', blank=True, null=True,
-        help_text='Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there.',
+        help_text='Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there. Recommended size: 100×100px, transparent PNG.',
     )
     favicon = models.ImageField(upload_to='branding/', blank=True, null=True, help_text='Recommended size: 512×512px, square PNG.')
     youtube_url = models.URLField(blank=True)
@@ -640,7 +640,7 @@ class Category(models.Model):
     logo_key = models.CharField(max_length=20, choices=LOGO_CHOICES, default='general')
     logo_image = models.ImageField(
         upload_to='category_logos/', max_length=500, blank=True, null=True,
-        help_text='Optional custom logo image. If uploaded, it is shown instead of the illustrated icon above.',
+        help_text='Optional custom logo image. If uploaded, it is shown instead of the illustrated icon above. Recommended size: 128×128px, square.',
     )
     order = models.PositiveIntegerField(default=0)
     parent = models.ForeignKey(

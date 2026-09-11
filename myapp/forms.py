@@ -342,8 +342,8 @@ class NavbarCustomizationForm(forms.ModelForm):
         }
         help_texts = {
             'logo_image': 'Recommended size: 200×60px (transparent PNG works best). Max 1MB. Also used for the loading screen and admin panel sidebar, unless separate logos are set for them below.',
-            'loader_logo_image': 'Optional — shown on the loading screen instead of the logo above. Leave blank to reuse it there.',
-            'admin_logo_image': 'Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there.',
+            'loader_logo_image': 'Optional — shown on the loading screen instead of the logo above. Leave blank to reuse it there. Recommended size: 200×200px, transparent PNG.',
+            'admin_logo_image': 'Optional — shown in the admin panel sidebar instead of the logo above. Leave blank to reuse it there. Recommended size: 100×100px, transparent PNG.',
             'favicon': 'Recommended size: 512×512px, square PNG or ICO. Shown in the browser tab.',
             'whatsapp_number': 'Digits only, with country code, no + or spaces (e.g. 915220000000).',
         }

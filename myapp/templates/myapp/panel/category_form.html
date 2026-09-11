@@ -41,7 +41,7 @@
 
     <label><span class="panel-label-text">Or upload a custom logo image</span>
       <div class="file-field-box">{{ form.logo_image }}</div>
-      <p class="custom-help">Optional. If uploaded, this image is shown instead of the illustrated logo above.{% if category.logo_image %} Uploading a new image replaces the current one.{% endif %}</p>
+      <p class="custom-help">Optional. If uploaded, this image is shown instead of the illustrated logo above. Recommended size: 128×128px, square.{% if category.logo_image %} Uploading a new image replaces the current one.{% endif %}</p>
       {% if form.logo_image.errors %}<ul class="panel-errors">{% for e in form.logo_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
