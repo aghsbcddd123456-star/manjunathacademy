@@ -35,31 +35,31 @@ body{background:var(--white);color:var(--ink)}
 
   <div class="exam-layout">
     <main class="exam-content">
-      <div class="exam-section-title">Instructions</div>
+      <div class="exam-section-title" data-i18n="instr_page_title">Instructions</div>
       <div class="exam-instruction-body">
         <section class="instruction-step" id="instructionStepOne">
-          <div class="exam-tools"><h1>General Instructions:</h1>{% include "myapp/includes/lang_switch.html" %}</div>
+          <div class="exam-tools"><h1 data-i18n="instr_general_heading">General Instructions:</h1>{% include "myapp/includes/lang_switch.html" %}</div>
           <ol class="exam-rules">
-            <li>Total duration of the examination is <strong>{% if course.duration_minutes %}{{ course.duration_minutes }} minutes{% else %}not time-limited{% endif %}</strong>.</li>
+            <li><span data-i18n="instr_duration_prefix">Total duration of the examination is</span> <strong>{% if course.duration_minutes %}{{ course.duration_minutes }} minutes{% else %}<span data-i18n="instr_not_time_limited">not time-limited</span>{% endif %}</strong>.</li>
             {% for line in instructions_settings.rules_list %}<li>{{ line }}</li>{% endfor %}
           </ol>
-          <p class="exam-status-title">Question status colors used during an online examination:</p>
+          <p class="exam-status-title" data-i18n="instr_status_title">Question status colors used during an online examination:</p>
           <div class="exam-legend">
-            <div class="exam-legend-row"><span class="exam-status answered"></span><span>You have answered the question.</span></div>
-            <div class="exam-legend-row"><span class="exam-status visited"></span><span>You have visited but not answered the question yet.</span></div>
-            <div class="exam-legend-row"><span class="exam-status review"></span><span>You have not answered the question but have marked it for review.</span></div>
-            <div class="exam-legend-row"><span class="exam-status review-answered"></span><span>You have answered the question and marked it for review.</span></div>
-            <div class="exam-legend-row"><span class="exam-status not-visited"></span><span>You have not visited the question yet.</span></div>
+            <div class="exam-legend-row"><span class="exam-status answered"></span><span data-i18n="instr_legend_answered">You have answered the question.</span></div>
+            <div class="exam-legend-row"><span class="exam-status visited"></span><span data-i18n="instr_legend_visited">You have visited but not answered the question yet.</span></div>
+            <div class="exam-legend-row"><span class="exam-status review"></span><span data-i18n="instr_legend_review">You have not answered the question but have marked it for review.</span></div>
+            <div class="exam-legend-row"><span class="exam-status review-answered"></span><span data-i18n="instr_legend_review_answered">You have answered the question and marked it for review.</span></div>
+            <div class="exam-legend-row"><span class="exam-status not-visited"></span><span data-i18n="instr_legend_not_visited">You have not visited the question yet.</span></div>
           </div>
         </section>
 
         <section class="instruction-step" id="instructionStepTwo" hidden>
-        <div class="exam-tools"><h1>General Instructions:</h1>{% include "myapp/includes/lang_switch.html" %}</div>
+        <div class="exam-tools"><h1 data-i18n="instr_general_heading">General Instructions:</h1>{% include "myapp/includes/lang_switch.html" %}</div>
         {% if section_rows %}
-        <p class="exam-lede">Read the following section details carefully.</p>
-        <div class="exam-section-table-wrap"><table class="exam-section-table"><thead><tr><th>Sl No.</th><th>Section Name</th><th>No. of Questions</th><th>Maximum Marks</th><th>Negative Marks</th><th>Positive Marks</th><th>Type</th></tr></thead><tbody>{% for row in section_rows %}<tr><td>{{ forloop.counter }}</td><td>{{ row.section.name }}</td><td>{{ row.question_count }}</td><td>{{ row.maximum_marks }}</td><td>{{ row.section.negative_marks }}</td><td>{{ row.positive_marks }}</td><td><span class="exam-type {% if row.section.is_optional %}optional{% else %}required{% endif %}">{% if row.section.is_optional %}Optional{% else %}Compulsory{% endif %}</span></td></tr>{% endfor %}</tbody></table></div>
+        <p class="exam-lede" data-i18n="instr_section_lede">Read the following section details carefully.</p>
+        <div class="exam-section-table-wrap"><table class="exam-section-table"><thead><tr><th data-i18n="instr_th_slno">Sl No.</th><th data-i18n="instr_th_section_name">Section Name</th><th data-i18n="instr_th_question_count">No. of Questions</th><th data-i18n="instr_th_max_marks">Maximum Marks</th><th data-i18n="instr_th_negative_marks">Negative Marks</th><th data-i18n="instr_th_positive_marks">Positive Marks</th><th data-i18n="instr_th_type">Type</th></tr></thead><tbody>{% for row in section_rows %}<tr><td>{{ forloop.counter }}</td><td>{{ row.section.name }}</td><td>{{ row.question_count }}</td><td>{{ row.maximum_marks }}</td><td>{{ row.section.negative_marks }}</td><td>{{ row.positive_marks }}</td><td><span class="exam-type {% if row.section.is_optional %}optional{% else %}required{% endif %}" data-i18n="{% if row.section.is_optional %}instr_type_optional{% else %}instr_type_compulsory{% endif %}">{% if row.section.is_optional %}Optional{% else %}Compulsory{% endif %}</span></td></tr>{% endfor %}</tbody></table></div>
         {% if optional_section_rows %}<div class="exam-optional-selection" id="optionalSectionSelection" data-limit="{{ course.max_optional_sections }}">
-          <strong>Choose maximum {{ course.max_optional_sections }} optional section{{ course.max_optional_sections|pluralize }}:</strong>
+          <strong><span data-i18n="instr_choose_max_prefix">Choose maximum</span> {{ course.max_optional_sections }} <span data-i18n="instr_choose_max_suffix">optional section{{ course.max_optional_sections|pluralize }}:</span></strong>
           <div class="exam-optional-list">
             {% for row in optional_section_rows %}<label class="exam-optional-choice"><input class="optional-section-checkbox" type="checkbox" name="selected_sections" value="{{ row.section.pk }}" form="examStartForm" {% if row.selected %}checked{% endif %}> {{ row.section.name }}</label>{% endfor %}
             <p class="exam-optional-help" id="optionalSectionHelp"></p>
@@ -67,19 +67,19 @@ body{background:var(--white);color:var(--ink)}
         </div>{% endif %}
         {% endif %}
         <ol class="exam-rules">
-          <li>Total duration of the examination is <strong>{% if course.duration_minutes %}{{ course.duration_minutes }} minutes{% else %}not time-limited{% endif %}</strong>.</li>
+          <li><span data-i18n="instr_duration_prefix">Total duration of the examination is</span> <strong>{% if course.duration_minutes %}{{ course.duration_minutes }} minutes{% else %}<span data-i18n="instr_not_time_limited">not time-limited</span>{% endif %}</strong>.</li>
           {% for line in instructions_settings.rules_list %}<li>{{ line }}</li>{% endfor %}
-          {% if section_rows %}<li>Sections marked <strong>Compulsory</strong> above must all be attempted; for sections marked <strong>Optional</strong>, choose only up to the limit stated.</li>{% endif %}
+          {% if section_rows %}<li data-i18n="instr_sections_rule">Sections marked <strong>Compulsory</strong> above must all be attempted; for sections marked <strong>Optional</strong>, choose only up to the limit stated.</li>{% endif %}
         </ol>
         <div class="exam-agreement"><label><input id="examAgreement" type="checkbox"> <span>{{ instructions_settings.agreement_text|linebreaksbr }}</span></label></div>
         </section>
       </div>
       <footer class="exam-footer">
-        <div class="exam-footer-step" id="instructionStepOneFooter"><button class="exam-next" id="instructionNext" type="button">Next →</button></div>
+        <div class="exam-footer-step" id="instructionStepOneFooter"><button class="exam-next" id="instructionNext" type="button" data-i18n="instr_btn_next">Next →</button></div>
         <div class="exam-footer-step between" id="instructionStepTwoFooter" hidden>
-        <button class="exam-back" id="instructionBack" type="button">← Go back</button>
-        {% if existing_attempt %}<p class="exam-resume-note">An unfinished attempt will be resumed.</p>{% endif %}
-        <form id="examStartForm" method="post">{% csrf_token %}<button class="exam-next" id="examStartButton" type="submit" disabled>{% if existing_attempt %}Resume Test{% else %}I am ready to begin{% endif %} →</button></form>
+        <button class="exam-back" id="instructionBack" type="button" data-i18n="instr_btn_back">← Go back</button>
+        {% if existing_attempt %}<p class="exam-resume-note" data-i18n="instr_resume_note">An unfinished attempt will be resumed.</p>{% endif %}
+        <form id="examStartForm" method="post">{% csrf_token %}<button class="exam-next" id="examStartButton" type="submit" disabled data-i18n="{% if existing_attempt %}instr_btn_resume{% else %}instr_btn_ready{% endif %}">{% if existing_attempt %}Resume Test{% else %}I am ready to begin{% endif %} →</button></form>
         </div>
       </footer>
     </main>
@@ -87,7 +87,7 @@ body{background:var(--white);color:var(--ink)}
     <aside class="exam-candidate">
       <div class="exam-avatar">{% if user.profile_picture %}<img loading="lazy" decoding="async" src="{{ user.profile_picture.url }}" alt="{{ user.name }}">{% else %}{{ user.name|first|upper }}{% endif %}</div>
       <h2>{{ user.name }}</h2><p>{{ user.email }}</p>
-      <div class="exam-candidate-meta"><div><span>Test</span><strong>{{ course.name|truncatechars:28 }}</strong></div><div><span>Questions</span><strong>{{ question_count }}</strong></div><div><span>Duration</span><strong>{% if course.duration_minutes %}{{ course.duration_minutes }} min{% else %}Unlimited{% endif %}</strong></div></div>
+      <div class="exam-candidate-meta"><div><span data-i18n="instr_meta_test">Test</span><strong>{{ course.name|truncatechars:28 }}</strong></div><div><span data-i18n="instr_meta_questions">Questions</span><strong>{{ question_count }}</strong></div><div><span data-i18n="instr_meta_duration">Duration</span><strong>{% if course.duration_minutes %}{{ course.duration_minutes }} min{% else %}<span data-i18n="instr_meta_unlimited">Unlimited</span>{% endif %}</strong></div></div>
     </aside>
   </div>
 </div>

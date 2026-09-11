@@ -36,6 +36,7 @@ urlpatterns = [
     path('contact-us/', views.contact_us_page, name='contact_us_page'),
     path('faq/', views.faq_page, name='faq_page'),
     path('exam-calendar/', views.exam_calendar_page, name='exam_calendar_page'),
+    path('api/search/', views.site_search_api, name='site_search_api'),
     path('course/<int:pk>/', views.course_detail, name='course_detail'),
     path('test-series/<int:pk>/', views.test_series_detail, name='test_series_detail'),
     path('test-series/<int:pk>/quiz/', views.daily_quiz_take, name='daily_quiz_take'),

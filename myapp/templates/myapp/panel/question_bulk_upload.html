@@ -7,7 +7,8 @@
 
 {% block extra_style %}
 .bulk-upload-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
-.bulk-upload-form input[type="file"]{display:block;margin-top:8px;font-size:13.5px}
+.bulk-upload-form input[type="url"]{display:block;width:100%;margin-top:8px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:#fff}
+.bulk-upload-form input[type="url"]:focus{outline:2px solid var(--orange);outline-offset:1px}
 .bulk-upload-form select{display:block;width:100%;margin-top:8px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:#fff}
 .bulk-upload-form select:focus{outline:2px solid var(--orange);outline-offset:1px}
 .bulk-results{margin-top:18px;padding:16px 18px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0}
@@ -26,7 +27,8 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
 .type-guide-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}
 .type-guide-card h5{margin:0 0 6px;font-size:13.5px;color:var(--ink)}
 .type-guide-card p{margin:0 0 8px;font-size:12.5px;color:var(--muted)}
-.type-guide-card code{display:block;background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.type-guide-card code{display:block;background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap}
+.type-guide-grid .type-guide-card{max-width:340px}
 {% endblock %}
 
 {% block content %}
@@ -43,24 +45,24 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
 
-  <form class="bulk-upload-form" method="post" enctype="multipart/form-data">
+  <form class="bulk-upload-form" method="post">
     {% csrf_token %}
-    <label style="flex:1;min-width:240px">
-      <span class="panel-label-text">CSV file</span>
-      <input type="file" name="file" accept=".csv,text/csv" required>
+    <label style="flex:1;min-width:280px">
+      <span class="panel-label-text">Google Docs link</span>
+      <input type="url" name="doc_url" placeholder="https://docs.google.com/document/d/..." required>
     </label>
     <label style="min-width:220px">
       <span class="panel-label-text">Upload into section</span>
       <select name="target_section">
-        <option value="">Use the CSV's "section" column</option>
-        <option value="unassigned">General / unassigned (ignore CSV)</option>
+        <option value="">Use each question's "Section:" line</option>
+        <option value="unassigned">General / unassigned (ignore document)</option>
         {% for s in sections %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
       </select>
     </label>
     <button type="submit" class="btn btn-primary">Upload questions</button>
-    <a class="btn btn-ghost" href="{% url 'panel_question_bulk_template' course.pk %}">⬇ Download sample CSV</a>
+    <a class="btn btn-ghost" href="{% url 'panel_question_bulk_template' course.pk %}">⬇ Download sample format</a>
   </form>
-  <p class="custom-help" style="margin-top:10px">Pick a section here to put every question in this file into that one section — this overrides the CSV's own <code>section</code> column. Leave it on the first option to use whatever each row's <code>section</code> column says.</p>
+  <p class="custom-help" style="margin-top:10px">Open the doc's <strong>Share</strong> menu and set general access to "Anyone with the link can view", then paste its link above. Pick a section here to put every question into that one section — this overrides each question's own <code>Section:</code> line. Leave it on the first option to use whatever each question's <code>Section:</code> line says.</p>
 
   {% if results %}
   <div class="bulk-results">
@@ -76,50 +78,34 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
 
   <div class="format-guide">
     <h3>File format</h3>
-    <p>Save your questions as a CSV file with a header row using these column names (any order). Only <code>text</code> is required — everything else has a sensible default. {% if sections %}Sections created for this test: {% for s in sections %}<code>{{ s.name }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}</p>
+    <p>Only multiple-choice (single correct answer) questions are supported. In the Google Doc, write each question as a block of lines with a blank line between questions — any order of lines within a block is fine. {% if sections %}Sections created for this test: {% for s in sections %}<code>{{ s.name }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}</p>
 
     <div class="panel-table-wrap">
       <table class="format-table">
         <thead>
-          <tr><th>Column</th><th>Required</th><th>What to put</th></tr>
+          <tr><th>Line</th><th>Required</th><th>What to put</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>question_type</code></td><td>No — defaults to Single</td><td>One of: <code>single</code>, <code>multiple</code>, <code>numeric</code>, <code>true_false</code>, <code>fill_blank</code></td></tr>
-          <tr><td><code>text</code></td><td>Yes</td><td>The full question text</td></tr>
-          <tr><td><code>option_a</code> … <code>option_d</code></td><td>For single/multiple only</td><td>The four answer choices</td></tr>
-          <tr><td><code>correct_answer</code></td><td>No, but recommended</td><td>Format depends on the question type — see below</td></tr>
-          <tr><td><code>marks</code></td><td>No — defaults to 1</td><td>Whole number of marks for the question</td></tr>
-          <tr><td><code>section</code></td><td>No — defaults to unassigned</td><td>Must exactly match an existing section name for this test</td></tr>
-          <tr><td><code>order</code></td><td>No — auto-numbered</td><td>Whole number controlling display order</td></tr>
+          <tr><td><code>Q1. …</code></td><td>Yes</td><td>The question text. A leading <code>Q1.</code>, <code>1)</code> etc. is optional and stripped automatically.</td></tr>
+          <tr><td><code>A) …</code> … <code>D) …</code></td><td>At least 2 options</td><td>The answer choices, one per line, letter followed by <code>)</code>, <code>.</code> or <code>:</code></td></tr>
+          <tr><td><code>Answer: …</code></td><td>No, but recommended</td><td>The correct option's letter (e.g. <code>Answer: B</code>) or its full text</td></tr>
+          <tr><td><code>Marks: …</code></td><td>No — defaults to 1</td><td>Whole number of marks for the question</td></tr>
+          <tr><td><code>Section: …</code></td><td>No — defaults to unassigned</td><td>Must exactly match an existing section name for this test</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="type-guide-grid">
       <div class="type-guide-card">
-        <h5>Single Correct Answer</h5>
-        <p>Fill options A–D. <code>correct_answer</code> is one letter.</p>
-        <code>single, What is 2+2?, 3, 4, 5, 6, B</code>
-      </div>
-      <div class="type-guide-card">
-        <h5>Multiple Correct Answers</h5>
-        <p>Fill options A–D. <code>correct_answer</code> is comma-separated letters.</p>
-        <code>multiple, Which are prime?, 2, 3, 4, 9, "A,B"</code>
-      </div>
-      <div class="type-guide-card">
-        <h5>True / False</h5>
-        <p>Leave options blank. <code>correct_answer</code> is True or False.</p>
-        <code>true_false, The sun rises in the east., , , , , True</code>
-      </div>
-      <div class="type-guide-card">
-        <h5>Numeric Answer</h5>
-        <p>Leave options blank. <code>correct_answer</code> is the exact number.</p>
-        <code>numeric, What is 12 x 12?, , , , , 144</code>
-      </div>
-      <div class="type-guide-card">
-        <h5>Fill in the Blank</h5>
-        <p>Leave options blank. <code>correct_answer</code> is the exact expected text.</p>
-        <code>fill_blank, The largest planet is ____., , , , , Jupiter</code>
+        <h5>Example question block</h5>
+        <p>A blank line separates this question from the next one in the doc.</p>
+        <code>Q1. What is the capital of India?
+A) Mumbai
+B) New Delhi
+C) Kolkata
+D) Chennai
+Answer: B
+Marks: 1</code>
       </div>
     </div>
   </div>

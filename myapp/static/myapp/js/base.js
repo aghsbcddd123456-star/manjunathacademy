@@ -67,6 +67,24 @@ var SITE_I18N = {
     btn_submit_registration: 'रजिस्ट्रेशन सबमिट करें',
     admission_error: 'कुछ गलत हो गया — कृपया अपनी जानकारी जांचें और फिर से प्रयास करें।',
     admission_success: 'धन्यवाद — हमारी एडमिशन टीम 24 घंटों के भीतर आपको कॉल करेगी।',
+    instr_page_title: 'निर्देश', instr_general_heading: 'सामान्य निर्देश:',
+    instr_duration_prefix: 'परीक्षा की कुल अवधि है', instr_not_time_limited: 'समय-सीमा रहित',
+    instr_status_title: 'ऑनलाइन परीक्षा के दौरान इस्तेमाल होने वाले प्रश्न स्थिति के रंग:',
+    instr_legend_answered: 'आपने प्रश्न का उत्तर दे दिया है।',
+    instr_legend_visited: 'आपने प्रश्न देखा है लेकिन उत्तर नहीं दिया है।',
+    instr_legend_review: 'आपने प्रश्न का उत्तर नहीं दिया है लेकिन इसे समीक्षा के लिए चिह्नित किया है।',
+    instr_legend_review_answered: 'आपने प्रश्न का उत्तर दिया है और इसे समीक्षा के लिए भी चिह्नित किया है।',
+    instr_legend_not_visited: 'आपने अभी तक इस प्रश्न को देखा ही नहीं है।',
+    instr_section_lede: 'कृपया निम्नलिखित सेक्शन विवरण ध्यान से पढ़ें।',
+    instr_th_slno: 'क्र.सं.', instr_th_section_name: 'सेक्शन का नाम', instr_th_question_count: 'प्रश्नों की संख्या',
+    instr_th_max_marks: 'अधिकतम अंक', instr_th_negative_marks: 'नकारात्मक अंक', instr_th_positive_marks: 'सकारात्मक अंक', instr_th_type: 'प्रकार',
+    instr_type_optional: 'वैकल्पिक', instr_type_compulsory: 'अनिवार्य',
+    instr_choose_max_prefix: 'अधिकतम', instr_choose_max_suffix: 'वैकल्पिक सेक्शन चुनें:',
+    instr_sections_rule: 'ऊपर <strong>अनिवार्य</strong> चिह्नित सेक्शन के सभी प्रश्न हल करने ज़रूरी हैं; <strong>वैकल्पिक</strong> चिह्नित सेक्शन में बताई गई सीमा तक ही चुनें।',
+    instr_btn_next: 'अगला →', instr_btn_back: '← वापस जाएँ',
+    instr_resume_note: 'अधूरा प्रयास फिर से शुरू किया जाएगा।',
+    instr_btn_resume: 'टेस्ट फिर से शुरू करें →', instr_btn_ready: 'मैं शुरू करने के लिए तैयार हूँ →',
+    instr_meta_test: 'टेस्ट', instr_meta_questions: 'प्रश्न', instr_meta_duration: 'अवधि', instr_meta_unlimited: 'असीमित',
   },
   kn: {
     nav_home: 'ಮುಖಪುಟ', nav_courses: 'ಕೋರ್ಸ್‌ಗಳು', nav_test_series: 'ಟೆಸ್ಟ್ ಸೀರೀಸ್', nav_quiz_game: 'ಕ್ವಿಜ್ ಗೇಮ್',
@@ -127,6 +145,24 @@ var SITE_I18N = {
     btn_submit_registration: 'ನೋಂದಣಿ ಸಲ್ಲಿಸಿ',
     admission_error: 'ಏನೋ ತಪ್ಪಾಗಿದೆ — ದಯವಿಟ್ಟು ನಿಮ್ಮ ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
     admission_success: 'ಧನ್ಯವಾದಗಳು — ನಮ್ಮ ಪ್ರವೇಶ ತಂಡ 24 ಗಂಟೆಗಳ ಒಳಗೆ ನಿಮಗೆ ಕರೆ ಮಾಡುತ್ತದೆ.',
+    instr_page_title: 'ಸೂಚನೆಗಳು', instr_general_heading: 'ಸಾಮಾನ್ಯ ಸೂಚನೆಗಳು:',
+    instr_duration_prefix: 'ಪರೀಕ್ಷೆಯ ಒಟ್ಟು ಅವಧಿ', instr_not_time_limited: 'ಸಮಯ ಮಿತಿ ಇಲ್ಲ',
+    instr_status_title: 'ಆನ್‌ಲೈನ್ ಪರೀಕ್ಷೆಯ ಸಮಯದಲ್ಲಿ ಬಳಸುವ ಪ್ರಶ್ನೆಯ ಸ್ಥಿತಿ ಬಣ್ಣಗಳು:',
+    instr_legend_answered: 'ನೀವು ಪ್ರಶ್ನೆಗೆ ಉತ್ತರಿಸಿದ್ದೀರಿ.',
+    instr_legend_visited: 'ನೀವು ಪ್ರಶ್ನೆಯನ್ನು ನೋಡಿದ್ದೀರಿ ಆದರೆ ಉತ್ತರಿಸಿಲ್ಲ.',
+    instr_legend_review: 'ನೀವು ಪ್ರಶ್ನೆಗೆ ಉತ್ತರಿಸಿಲ್ಲ ಆದರೆ ಪರಿಶೀಲನೆಗಾಗಿ ಗುರುತಿಸಿದ್ದೀರಿ.',
+    instr_legend_review_answered: 'ನೀವು ಪ್ರಶ್ನೆಗೆ ಉತ್ತರಿಸಿದ್ದೀರಿ ಮತ್ತು ಪರಿಶೀಲನೆಗಾಗಿ ಗುರುತಿಸಿದ್ದೀರಿ.',
+    instr_legend_not_visited: 'ನೀವು ಈ ಪ್ರಶ್ನೆಯನ್ನು ಇನ್ನೂ ನೋಡಿಲ್ಲ.',
+    instr_section_lede: 'ದಯವಿಟ್ಟು ಈ ಕೆಳಗಿನ ವಿಭಾಗದ ವಿವರಗಳನ್ನು ಎಚ್ಚರಿಕೆಯಿಂದ ಓದಿ.',
+    instr_th_slno: 'ಕ್ರ.ಸಂ.', instr_th_section_name: 'ವಿಭಾಗದ ಹೆಸರು', instr_th_question_count: 'ಪ್ರಶ್ನೆಗಳ ಸಂಖ್ಯೆ',
+    instr_th_max_marks: 'ಗರಿಷ್ಠ ಅಂಕಗಳು', instr_th_negative_marks: 'ಋಣಾತ್ಮಕ ಅಂಕಗಳು', instr_th_positive_marks: 'ಧನಾತ್ಮಕ ಅಂಕಗಳು', instr_th_type: 'ಪ್ರಕಾರ',
+    instr_type_optional: 'ಐಚ್ಛಿಕ', instr_type_compulsory: 'ಕಡ್ಡಾಯ',
+    instr_choose_max_prefix: 'ಗರಿಷ್ಠ', instr_choose_max_suffix: 'ಐಚ್ಛಿಕ ವಿಭಾಗಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ:',
+    instr_sections_rule: 'ಮೇಲೆ <strong>ಕಡ್ಡಾಯ</strong> ಎಂದು ಗುರುತಿಸಿದ ವಿಭಾಗಗಳ ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳನ್ನು ಪ್ರಯತ್ನಿಸಬೇಕು; <strong>ಐಚ್ಛಿಕ</strong> ಎಂದು ಗುರುತಿಸಿದ ವಿಭಾಗಗಳಿಗೆ, ತಿಳಿಸಿದ ಮಿತಿಯವರೆಗೆ ಮಾತ್ರ ಆಯ್ಕೆಮಾಡಿ.',
+    instr_btn_next: 'ಮುಂದೆ →', instr_btn_back: '← ಹಿಂದೆ ಹೋಗಿ',
+    instr_resume_note: 'ಅಪೂರ್ಣ ಪ್ರಯತ್ನವನ್ನು ಪುನರಾರಂಭಿಸಲಾಗುವುದು.',
+    instr_btn_resume: 'ಟೆಸ್ಟ್ ಪುನರಾರಂಭಿಸಿ →', instr_btn_ready: 'ನಾನು ಪ್ರಾರಂಭಿಸಲು ಸಿದ್ಧ →',
+    instr_meta_test: 'ಟೆಸ್ಟ್', instr_meta_questions: 'ಪ್ರಶ್ನೆಗಳು', instr_meta_duration: 'ಅವಧಿ', instr_meta_unlimited: 'ಅನಿಯಮಿತ',
   },
 };
 
@@ -418,6 +454,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const userTrigger = document.getElementById('navUserTrigger');
   if (userMenu && userTrigger) navDropdowns.push({ box: userMenu, toggle: userTrigger });
 
+  const navSearchBox = document.getElementById('navSearch');
+  const navSearchToggle = document.getElementById('navSearchToggle');
+  if (navSearchBox && navSearchToggle) navDropdowns.push({ box: navSearchBox, toggle: navSearchToggle });
+
   function closeNavDropdowns(except) {
     navDropdowns.forEach(({ box, toggle }) => {
       if (box === except) return;
@@ -460,6 +500,93 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
+
+  /* ---------- 2c. Site search ---------- */
+  const navSearchInput = document.getElementById('navSearchInput');
+  const navSearchResults = document.getElementById('navSearchResults');
+  if (navSearchBox && navSearchToggle && navSearchInput && navSearchResults) {
+    navSearchToggle.addEventListener('click', () => {
+      if (navSearchBox.classList.contains('is-open')) setTimeout(() => navSearchInput.focus(), 0);
+    });
+
+    function renderSearchResults(results) {
+      navSearchResults.innerHTML = '';
+      if (!results.length) {
+        const msg = document.createElement('p');
+        msg.className = 'nav-search-msg';
+        msg.textContent = 'No results found.';
+        navSearchResults.appendChild(msg);
+        return;
+      }
+      results.forEach((r) => {
+        const link = document.createElement('a');
+        link.className = 'nav-search-result';
+        link.href = r.url;
+
+        if (r.thumbnail) {
+          const img = document.createElement('img');
+          img.className = 'nav-search-result-thumb';
+          img.src = r.thumbnail;
+          img.alt = '';
+          img.loading = 'lazy';
+          link.appendChild(img);
+        } else {
+          const placeholder = document.createElement('span');
+          placeholder.className = 'nav-search-result-thumb';
+          link.appendChild(placeholder);
+        }
+
+        const body = document.createElement('span');
+        body.className = 'nav-search-result-body';
+
+        const name = document.createElement('span');
+        name.className = 'nav-search-result-name';
+        name.textContent = r.name;
+        body.appendChild(name);
+
+        const meta = document.createElement('span');
+        meta.className = 'nav-search-result-meta';
+        meta.textContent = r.type + (r.is_free ? ' · Free' : ` · ₹${r.price}`);
+        body.appendChild(meta);
+
+        link.appendChild(body);
+        navSearchResults.appendChild(link);
+      });
+    }
+
+    function showSearchMessage(text) {
+      navSearchResults.innerHTML = '';
+      const msg = document.createElement('p');
+      msg.className = 'nav-search-msg';
+      msg.textContent = text;
+      navSearchResults.appendChild(msg);
+    }
+
+    let searchTimer = null;
+    let searchSeq = 0;
+    navSearchInput.addEventListener('input', () => {
+      const q = navSearchInput.value.trim();
+      clearTimeout(searchTimer);
+      if (q.length < 2) {
+        navSearchResults.innerHTML = '';
+        return;
+      }
+      searchTimer = setTimeout(() => {
+        const seq = ++searchSeq;
+        showSearchMessage('Searching…');
+        fetch(`/api/search/?q=${encodeURIComponent(q)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (seq !== searchSeq) return;
+            renderSearchResults(data.results || []);
+          })
+          .catch(() => {
+            if (seq !== searchSeq) return;
+            showSearchMessage('Something went wrong. Try again.');
+          });
+      }, 300);
+    });
+  }
 
   /* ---------- 3. Header shadow + active link ---------- */
   const header = document.querySelector('.site-header');

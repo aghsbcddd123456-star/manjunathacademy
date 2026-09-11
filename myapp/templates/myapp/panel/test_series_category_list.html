@@ -22,6 +22,8 @@
 .btn-sm{padding:7px 12px;font-size:12.5px;white-space:nowrap}
 .btn-danger{background:#FEF2F2;color:#DC2626}
 .btn-danger:hover{background:#DC2626;color:#fff}
+.panel-search-row{margin-bottom:18px}
+.panel-search-input{border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:14px;font-family:inherit;width:100%;max-width:340px}
 {% endblock %}
 
 {% block content %}
@@ -34,15 +36,19 @@
     <a class="btn btn-primary" href="{% url 'panel_test_series_category_add' %}">+ Add exam (Level 0)</a>
   </div>
 
+  <div class="panel-search-row">
+    <input type="text" id="taxonomySearch" class="panel-search-input" placeholder="Search exams, subjects, topics..." autocomplete="off">
+  </div>
+
   {% if messages %}
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
 
   {% if roots %}
-    <div class="taxonomy-tree">
+    <div class="taxonomy-tree" id="taxonomyTree">
       {% for root in roots %}
       <div class="taxonomy-node">
-        <div class="taxonomy-node-row level-0">
+        <div class="taxonomy-node-row level-0" data-name="{{ root.name|lower }}">
           <span class="taxonomy-node-name"><span class="taxonomy-node-level">Exam</span>{% include "myapp/includes/category_logo.html" with icon_key=root.logo_key %}{{ root.name }}</span>
           <div class="taxonomy-node-actions">
             <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ root.pk }}">+ Add sub-exam</a>
@@ -57,7 +63,7 @@
         <div class="taxonomy-children">
           {% for child in root.children.all %}
           <div class="taxonomy-node">
-            <div class="taxonomy-node-row level-1">
+            <div class="taxonomy-node-row level-1" data-name="{{ child.name|lower }}">
               <span class="taxonomy-node-name"><span class="taxonomy-node-level">Sub-exam</span>{% include "myapp/includes/category_logo.html" with icon_key=child.logo_key %}{{ child.name }}</span>
               <div class="taxonomy-node-actions">
                 <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ child.pk }}">+ Add subject</a>
@@ -72,7 +78,7 @@
             <div class="taxonomy-grandchildren">
               {% for grandchild in child.children.all %}
               <div class="taxonomy-node">
-                <div class="taxonomy-node-row level-2">
+                <div class="taxonomy-node-row level-2" data-name="{{ grandchild.name|lower }}">
                   <span class="taxonomy-node-name"><span class="taxonomy-node-level">Subject</span>{% include "myapp/includes/category_logo.html" with icon_key=grandchild.logo_key %}{{ grandchild.name }}</span>
                   <div class="taxonomy-node-actions">
                     <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_add' %}?parent={{ grandchild.pk }}">+ Add topic</a>
@@ -86,7 +92,7 @@
                 {% if grandchild.children.all %}
                 <div class="taxonomy-greatgrandchildren">
                   {% for topic in grandchild.children.all %}
-                  <div class="taxonomy-node-row level-3">
+                  <div class="taxonomy-node-row level-3" data-name="{{ topic.name|lower }}">
                     <span class="taxonomy-node-name"><span class="taxonomy-node-level">Topic</span>{% include "myapp/includes/category_logo.html" with icon_key=topic.logo_key %}{{ topic.name }}</span>
                     <div class="taxonomy-node-actions">
                       <a class="btn btn-ghost btn-sm" href="{% url 'panel_test_series_category_edit' topic.pk %}">Edit</a>
@@ -110,8 +116,52 @@
       </div>
       {% endfor %}
     </div>
+    <p class="panel-empty" id="taxonomyNoResults" hidden><span class="panel-empty-ico">🔍</span>No exams, subjects or topics match your search.</p>
   {% else %}
     <p class="panel-empty"><span class="panel-empty-ico">🏷️</span>No exam categories yet — add your first exam to get started.</p>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var input = document.getElementById('taxonomySearch');
+  var tree = document.getElementById('taxonomyTree');
+  var noResults = document.getElementById('taxonomyNoResults');
+  if (!input || !tree) return;
+
+  function matchNode(rowEl, containerEl, q) {
+    var selfMatch = !q || (rowEl.getAttribute('data-name') || '').indexOf(q) !== -1;
+    var childMatch = false;
+    if (containerEl) {
+      var childItems = containerEl.querySelectorAll(':scope > .taxonomy-node, :scope > .taxonomy-node-row');
+      childItems.forEach(function (item) {
+        var itemMatch;
+        if (item.matches('.taxonomy-node-row')) {
+          itemMatch = !q || (item.getAttribute('data-name') || '').indexOf(q) !== -1;
+        } else {
+          var childRow = item.querySelector(':scope > .taxonomy-node-row');
+          var childContainer = item.querySelector(':scope > .taxonomy-children, :scope > .taxonomy-grandchildren, :scope > .taxonomy-greatgrandchildren');
+          itemMatch = matchNode(childRow, childContainer, q);
+        }
+        childMatch = childMatch || itemMatch;
+        item.hidden = !(selfMatch || itemMatch);
+      });
+    }
+    return selfMatch || childMatch;
+  }
+
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    var anyVisible = false;
+    tree.querySelectorAll(':scope > .taxonomy-node').forEach(function (node) {
+      var row = node.querySelector(':scope > .taxonomy-node-row');
+      var container = node.querySelector(':scope > .taxonomy-children');
+      var match = matchNode(row, container, q);
+      node.hidden = !match;
+      anyVisible = anyVisible || match;
+    });
+    if (noResults) noResults.hidden = !q || anyVisible;
+  });
+})();
 {% endblock %}

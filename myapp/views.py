@@ -2,7 +2,10 @@ import csv
 import io
 import json
 import random
+import re
 import secrets
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime
 
@@ -846,6 +849,25 @@ def _course_preview_content(course):
     if course.enable_folders and course.course_type in (Course.VIDEO_COURSE, Course.ELIBRARY):
         preview_tree, preview_root_content, preview_content = _build_course_content_tree(course)
     return preview_tree, preview_root_content, preview_content
+
+
+def site_search_api(request):
+    query = (request.GET.get('q') or '').strip()
+    results = []
+    if len(query) >= 2:
+        courses = Course.objects.filter(is_active=True, name__icontains=query).order_by('order', '-created_at')[:8]
+        for course in courses:
+            url = reverse('test_series_detail' if course.course_type == Course.TEST_SERIES else 'course_detail', args=[course.pk])
+            results.append({
+                'id': course.pk,
+                'name': course.name,
+                'type': course.get_course_type_display(),
+                'url': url,
+                'thumbnail': course.thumbnail.url if course.thumbnail else '',
+                'is_free': course.is_free,
+                'price': str(course.current_price),
+            })
+    return JsonResponse({'query': query, 'results': results})
 
 
 def course_detail(request, pk):
@@ -3164,15 +3186,102 @@ def panel_question_delete(request, course_pk, pk):
     return redirect('panel_question_list', course_pk=course.pk)
 
 
-BULK_UPLOAD_COLUMNS = ['question_type', 'text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'marks', 'section', 'order']
+GOOGLE_DOC_ID_RE = re.compile(r'/document/d/([a-zA-Z0-9_-]+)')
+GOOGLE_DOC_QUESTION_PREFIX_RE = re.compile(r'^\s*(?:q(?:uestion)?\s*\d*[.):]|\d+[.)])\s*', re.IGNORECASE)
+GOOGLE_DOC_OPTION_RE = re.compile(r'^\s*\(?([A-Da-d])\)?\s*[.):]\s*(.*)$')
+GOOGLE_DOC_ANSWER_RE = re.compile(r'^\s*(?:correct\s*)?answer\s*[:\-]\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_MARKS_RE = re.compile(r'^\s*marks?\s*[:\-]\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_SECTION_RE = re.compile(r'^\s*section\s*[:\-]\s*(.*)$', re.IGNORECASE)
 
-BULK_UPLOAD_TYPE_ALIASES = {
-    'single': Question.SINGLE, 'single correct answer': Question.SINGLE,
-    'multiple': Question.MULTIPLE, 'multiple correct answers': Question.MULTIPLE, 'multiple correct answer': Question.MULTIPLE,
-    'numeric': Question.NUMERIC, 'numeric answer': Question.NUMERIC,
-    'true_false': Question.TRUE_FALSE, 'true/false': Question.TRUE_FALSE, 'true false': Question.TRUE_FALSE,
-    'fill_blank': Question.FILL_BLANK, 'fill in the blank': Question.FILL_BLANK,
-}
+
+def _extract_google_doc_id(url):
+    url = (url or '').strip()
+    if not url:
+        return None
+    match = GOOGLE_DOC_ID_RE.search(url)
+    if match:
+        return match.group(1)
+    if re.fullmatch(r'[a-zA-Z0-9_-]{20,}', url):
+        return url
+    return None
+
+
+def _fetch_google_doc_text(doc_id):
+    export_url = f'https://docs.google.com/document/d/{doc_id}/export?format=txt'
+    req = urllib.request.Request(export_url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return resp.read().decode('utf-8-sig')
+
+
+def _parse_mcq_doc(text):
+    """Parse Q / A-D / Answer blocks (blank-line separated) into MCQ dicts, plus a list of block-level errors."""
+    questions = []
+    errors = []
+    normalized = text.replace('\r\n', '\n').replace('\r', '\n')
+    blocks = re.split(r'\n\s*\n', normalized)
+    block_num = 0
+    for raw_block in blocks:
+        lines = [line.strip() for line in raw_block.split('\n') if line.strip()]
+        if not lines:
+            continue
+        block_num += 1
+
+        question_text = None
+        options = {}
+        answer_raw = None
+        marks = 1
+        section_name = None
+        for line in lines:
+            opt_match = GOOGLE_DOC_OPTION_RE.match(line)
+            answer_match = GOOGLE_DOC_ANSWER_RE.match(line)
+            marks_match = GOOGLE_DOC_MARKS_RE.match(line)
+            section_match = GOOGLE_DOC_SECTION_RE.match(line)
+            if opt_match:
+                options[opt_match.group(1).upper()] = opt_match.group(2).strip()
+            elif answer_match:
+                answer_raw = answer_match.group(1).strip()
+            elif marks_match:
+                try:
+                    marks = int(marks_match.group(1).strip())
+                except ValueError:
+                    pass
+            elif section_match:
+                section_name = section_match.group(1).strip()
+            elif question_text is None:
+                question_text = GOOGLE_DOC_QUESTION_PREFIX_RE.sub('', line).strip()
+            else:
+                question_text += ' ' + line
+
+        if not question_text:
+            errors.append(f'Block {block_num}: skipped — could not find a question line.')
+            continue
+        if len(options) < 2:
+            errors.append(f'Block {block_num} ("{question_text[:50]}"): skipped — needs at least 2 options (A, B, ...).')
+            continue
+
+        correct_letter = ''
+        warning = None
+        if answer_raw:
+            candidate = answer_raw.strip().strip('.').upper()
+            if candidate in options:
+                correct_letter = candidate
+            else:
+                match_letter = next((k for k, v in options.items() if v.strip().lower() == answer_raw.strip().lower()), None)
+                if match_letter:
+                    correct_letter = match_letter
+                else:
+                    warning = f'"{question_text[:50]}": could not match answer "{answer_raw}" to an option — left unset.'
+
+        questions.append({
+            'text': question_text,
+            'options': options,
+            'correct_answer': correct_letter,
+            'marks': marks,
+            'section_name': section_name,
+            'warning': warning,
+        })
+
+    return questions, errors
 
 
 @login_required(login_url='login')
@@ -3183,90 +3292,71 @@ def panel_question_bulk_upload(request, course_pk):
     results = None
 
     if request.method == 'POST':
-        upload = request.FILES.get('file')
+        doc_url = request.POST.get('doc_url', '')
         target_section_choice = request.POST.get('target_section', '')
         forced_section = 'unset'
         if target_section_choice == 'unassigned':
             forced_section = None
         elif target_section_choice.isdigit():
             forced_section = next((s for s in sections_by_name.values() if s.pk == int(target_section_choice)), None)
-        if not upload:
-            messages.error(request, 'Please choose a CSV file to upload.')
+
+        doc_id = _extract_google_doc_id(doc_url)
+        text = None
+        if not doc_id:
+            messages.error(request, 'Please paste a valid Google Docs link (from the Share menu).')
         else:
             try:
-                decoded = upload.read().decode('utf-8-sig')
-            except UnicodeDecodeError:
-                decoded = None
-                messages.error(request, 'Could not read that file — please save it as a CSV (UTF-8) file and try again.')
-
-            if decoded is not None:
-                reader = csv.DictReader(io.StringIO(decoded))
-                fieldnames = {(f or '').strip().lower().replace(' ', '_'): f for f in (reader.fieldnames or [])}
-                if 'text' not in fieldnames:
-                    messages.error(request, 'The file must have a "text" column with the question text.')
+                text = _fetch_google_doc_text(doc_id)
+            except urllib.error.HTTPError as exc:
+                if exc.code in (401, 403, 404):
+                    messages.error(request, 'Could not access that document — open Share → General access and set it to "Anyone with the link can view", then try again.')
                 else:
-                    created = 0
-                    warnings = []
-                    errors = []
-                    next_order = course.questions.count()
-                    with transaction.atomic():
-                        for row_num, raw_row in enumerate(reader, start=2):
-                            row = {key: (raw_row.get(source_key) or '').strip() for key, source_key in fieldnames.items()}
-                            text = row.get('text', '')
-                            if not text:
-                                errors.append(f'Row {row_num}: skipped — question text is empty.')
-                                continue
+                    messages.error(request, f'Could not fetch that document (HTTP {exc.code}). Check the link and try again.')
+            except urllib.error.URLError:
+                messages.error(request, 'Could not reach Google Docs. Check your connection and try again.')
 
-                            type_raw = row.get('question_type', '').strip().lower()
-                            if not type_raw:
-                                question_type = Question.SINGLE
-                            elif type_raw in BULK_UPLOAD_TYPE_ALIASES:
-                                question_type = BULK_UPLOAD_TYPE_ALIASES[type_raw]
-                            else:
-                                question_type = Question.SINGLE
-                                warnings.append(f'Row {row_num}: unknown question type "{row.get("question_type")}" — defaulted to Single Correct Answer.')
+        if text is not None:
+            parsed_questions, parse_errors = _parse_mcq_doc(text)
+            if not parsed_questions and not parse_errors:
+                messages.error(request, 'No questions were found in that document. Check the format and try again.')
+            else:
+                created = 0
+                warnings = []
+                errors = list(parse_errors)
+                next_order = course.questions.count()
+                with transaction.atomic():
+                    for q in parsed_questions:
+                        if q['warning']:
+                            warnings.append(q['warning'])
 
-                            marks_raw = row.get('marks', '')
-                            try:
-                                marks = int(marks_raw) if marks_raw else 1
-                            except ValueError:
-                                marks = 1
-                                warnings.append(f'Row {row_num}: invalid marks "{marks_raw}" — defaulted to 1.')
+                        if forced_section != 'unset':
+                            section = forced_section
+                        else:
+                            section = None
+                            if q['section_name']:
+                                section = sections_by_name.get(q['section_name'].lower())
+                                if section is None:
+                                    warnings.append(f'"{q["text"][:50]}": section "{q["section_name"]}" not found — left unassigned.')
 
-                            order_raw = row.get('order', '')
-                            order = int(order_raw) if order_raw.isdigit() else next_order
-                            next_order = max(next_order, order) + 1
+                        Question.objects.create(
+                            course=course,
+                            section=section,
+                            question_type=Question.SINGLE,
+                            text=q['text'],
+                            option_a=q['options'].get('A', ''),
+                            option_b=q['options'].get('B', ''),
+                            option_c=q['options'].get('C', ''),
+                            option_d=q['options'].get('D', ''),
+                            correct_answer=q['correct_answer'],
+                            marks=q['marks'],
+                            order=next_order,
+                        )
+                        next_order += 1
+                        created += 1
 
-                            if forced_section != 'unset':
-                                section = forced_section
-                            else:
-                                section = None
-                                section_raw = row.get('section', '')
-                                if section_raw:
-                                    section = sections_by_name.get(section_raw.lower())
-                                    if section is None:
-                                        warnings.append(f'Row {row_num}: section "{section_raw}" not found — left unassigned.')
-
-                            Question.objects.create(
-                                course=course,
-                                section=section,
-                                question_type=question_type,
-                                text=text,
-                                option_a=row.get('option_a', ''),
-                                option_b=row.get('option_b', ''),
-                                option_c=row.get('option_c', ''),
-                                option_d=row.get('option_d', ''),
-                                correct_answer=row.get('correct_answer', ''),
-                                marks=marks,
-                                order=order,
-                            )
-                            created += 1
-
-                    results = {'created': created, 'warnings': warnings, 'errors': errors}
-                    if created:
-                        messages.success(request, f'{created} question{"s" if created != 1 else ""} imported successfully.')
-                    elif not errors:
-                        messages.error(request, 'No questions were found in that file.')
+                results = {'created': created, 'warnings': warnings, 'errors': errors}
+                if created:
+                    messages.success(request, f'{created} question{"s" if created != 1 else ""} imported successfully.')
 
     return render(request, 'myapp/panel/question_bulk_upload.html', {
         'course': course,
@@ -3280,16 +3370,33 @@ def panel_question_bulk_upload(request, course_pk):
 @user_passes_test(_is_staff, login_url='login')
 def panel_question_bulk_template(request, course_pk):
     get_object_or_404(Course, pk=course_pk, course_type=Course.TEST_SERIES)
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(BULK_UPLOAD_COLUMNS)
-    writer.writerow(['single', 'What is the capital of India?', 'Mumbai', 'New Delhi', 'Kolkata', 'Chennai', 'B', '1', '', ''])
-    writer.writerow(['multiple', 'Which of these are prime numbers?', '2', '3', '4', '9', 'A,B', '2', '', ''])
-    writer.writerow(['true_false', 'The sun rises in the east.', '', '', '', '', 'True', '1', '', ''])
-    writer.writerow(['numeric', 'What is 12 x 12?', '', '', '', '', '144', '1', '', ''])
-    writer.writerow(['fill_blank', 'The largest planet in our solar system is ____.', '', '', '', '', 'Jupiter', '1', '', ''])
-    response = HttpResponse(buffer.getvalue(), content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="question_upload_template.csv"'
+    sample = (
+        'Q1. What is the capital of India?\n'
+        'A) Mumbai\n'
+        'B) New Delhi\n'
+        'C) Kolkata\n'
+        'D) Chennai\n'
+        'Answer: B\n'
+        'Marks: 1\n'
+        '\n'
+        'Q2. Which planet is known as the Red Planet?\n'
+        'A) Earth\n'
+        'B) Venus\n'
+        'C) Mars\n'
+        'D) Jupiter\n'
+        'Answer: C\n'
+        'Marks: 1\n'
+        '\n'
+        'Q3. What is 12 x 12?\n'
+        'A) 124\n'
+        'B) 144\n'
+        'C) 132\n'
+        'D) 148\n'
+        'Answer: B\n'
+        'Marks: 2\n'
+    )
+    response = HttpResponse(sample, content_type='text/plain; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="question_upload_sample.txt"'
     return response
 
 
