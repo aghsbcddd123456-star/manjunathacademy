@@ -22,6 +22,27 @@
   <input type="month" name="month" value="{{ selected_month|date:'Y-m' }}" onchange="this.form.submit()">
 </form>
 
+<div class="panel-filter-bar">
+  <form class="panel-filter" method="get">
+    <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
+    <label>Search
+      <input type="text" name="q" value="{{ search }}" placeholder="Staff name">
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="">All</option>
+        <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="not_generated" {% if status == 'not_generated' %}selected{% endif %}>Not generated</option>
+      </select>
+    </label>
+    <div class="panel-filter-actions">
+      <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+      {% if search or status %}<a class="btn btn-ghost btn-sm" href="?month={{ selected_month|date:'Y-m' }}">Clear</a>{% endif %}
+    </div>
+  </form>
+</div>
+
 <div class="panel-stats">
   <div class="panel-stat panel-stat-3">
     <span class="panel-stat-ico">🧾</span>

@@ -77,7 +77,7 @@
         <div class="result-card">
           <div>
             <p class="result-name">Quiz Game round</p>
-            <p class="result-meta">{{ qz.taken_at|date:"d M Y, h:i A" }}{% if qz.final_prize_label %} · Reached {{ qz.final_prize_label }}{% endif %}</p>
+            <p class="result-meta">{{ qz.taken_at|date:"d M Y, h:i A" }}{% if qz.final_level > 1 %} · Reached Level {{ qz.final_level }}{% endif %}</p>
           </div>
           <span class="result-score">{{ qz.correct_count }} / {{ qz.questions_answered }}</span>
         </div>

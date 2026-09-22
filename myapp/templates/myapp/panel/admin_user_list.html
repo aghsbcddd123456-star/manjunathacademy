@@ -1,0 +1,82 @@
+{% extends "myapp/panel/base.html" %}
+
+{% block title %}Admin Users{% endblock %}
+{% block page_title %}Admin users{% endblock %}
+{% block page_sub %}Give a signed-up student sub-admin or teacher access to specific panel sections{% endblock %}
+{% block nav_admin_users %}is-active{% endblock %}
+{% block nav_signups_open %}is-open{% endblock %}
+
+{% block extra_style %}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn-danger{background:#FEF2F2;color:#DC2626;border-color:#FECACA}.btn-danger:hover{background:#DC2626;color:#fff;border-color:#DC2626}
+.admin-actions{display:flex;gap:8px}
+.role-pill{display:inline-flex;align-items:center;font-size:11px;font-weight:800;padding:4px 11px;border-radius:999px;background:#EFF6FF;color:#1D4ED8}
+.role-pill.teacher{background:#F0FDF4;color:#15803D}
+.role-pill.full{background:#FFF1E6;color:#C2410C}
+{% endblock %}
+
+{% block content %}
+<div class="panel-card">
+  <div class="panel-card-head">
+    <div>
+      <h2>Full admins</h2>
+      <p>Unrestricted access to every panel section</p>
+    </div>
+  </div>
+  <div class="panel-table-wrap">
+    <table class="panel-table">
+      <thead><tr><th>Name</th><th>Email</th></tr></thead>
+      <tbody>
+        {% for admin in super_admins %}
+        <tr><td>{{ admin.name }}</td><td>{{ admin.email }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel-card">
+  <div class="panel-card-head">
+    <div>
+      <h2>Sub admins &amp; teachers</h2>
+      <p>{{ admins|length }} admin user{{ admins|length|pluralize }} with restricted or full panel access</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'panel_admin_user_add' %}">+ Add admin user</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
+  {% endif %}
+
+  {% if admins %}
+    <div class="panel-table-wrap">
+      <table class="panel-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th>Access</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for admin in admins %}
+          <tr>
+            <td>{{ admin.name }}</td>
+            <td>{{ admin.email }}</td>
+            <td>{% if admin.panel_role %}<span class="role-pill {{ admin.panel_role }}">{{ admin.get_panel_role_display }}</span>{% else %}—{% endif %}</td>
+            <td>{% if admin.is_full_admin %}<span class="role-pill full">Full access</span>{% else %}{{ admin.panel_permissions|length }} section{{ admin.panel_permissions|length|pluralize }}{% endif %}</td>
+            <td>
+              <div class="admin-actions">
+                <a class="btn btn-ghost btn-sm" href="{% url 'panel_admin_user_permissions' admin.pk %}">Edit access</a>
+                <form method="post" action="{% url 'panel_admin_user_remove' admin.pk %}" onsubmit="return confirm('Remove admin panel access for this user?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm">Remove access</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="panel-empty"><span class="panel-empty-ico">🛡️</span>No sub admins or teachers added yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

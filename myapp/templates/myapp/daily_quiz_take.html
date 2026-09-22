@@ -22,6 +22,7 @@ body{background:var(--surface-2)}
 .qt-card{width:100%;max-width:640px;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:26px 28px;box-shadow:var(--shadow-sm)}
 .qt-progress{font-size:13px;font-weight:800;color:var(--muted);margin:0 0 12px}
 .qt-question{font-size:16px;font-weight:600;color:var(--ink);line-height:1.6;margin:0 0 22px}
+.qt-question-image{margin:-10px 0 22px}.qt-question-image img{max-width:100%;max-height:320px;border-radius:8px;border:1px solid var(--line);display:block}
 .qt-options{display:flex;flex-direction:column;gap:12px}
 .qt-option{
   position:relative;display:flex;align-items:center;gap:14px;padding:13px 16px;
@@ -91,6 +92,7 @@ body{background:var(--surface-2)}
         <section class="qt-slide" data-index="{{ forloop.counter0 }}" {% if not forloop.first %}hidden{% endif %}>
           <p class="qt-progress">Question {{ forloop.counter }} of {{ quiz_questions|length }}</p>
           <p class="qt-question">{{ question.text }}</p>
+          {% if question.question_image %}<div class="qt-question-image"><img loading="lazy" decoding="async" src="{{ question.question_image.url }}" alt=""></div>{% endif %}
           {% if question.question_type == 'single' %}
             <div class="qt-options">
               {% if question.option_a %}<label class="qt-option"><input type="radio" name="q_{{ question.id }}" value="A"><span class="qt-option-badge">1</span>{{ question.option_a }}</label>{% endif %}

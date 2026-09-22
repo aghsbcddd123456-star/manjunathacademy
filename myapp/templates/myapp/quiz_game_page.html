@@ -27,10 +27,13 @@
 .quiz-game-dot,.quiz-game-titlebar-label{display:none}
 .quiz-game-body{padding:38px 32px 34px;position:relative;z-index:1}
 .quiz-game-head{position:relative;display:flex;align-items:center;justify-content:space-between;margin:0 auto 20px;width:78%;z-index:2}
-.quiz-game-level,.quiz-game-prize{font-size:12px;font-weight:800;color:#BAE6FD;background:#111D31;padding:7px 14px;border:1px solid #2879A5;border-radius:8px}
-.quiz-game-timer{position:absolute;left:50%;top:-13px;transform:translateX(-50%);min-width:82px;text-align:center;color:#fff;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;background:#17233A;border:1px solid #38BDF8;padding:6px 12px;border-radius:8px}
-.quiz-game-question{font-size:clamp(19px,2.3vw,27px);font-weight:700;text-align:center;color:#fff;margin:0 0 25px;padding:30px 7% 26px;line-height:1.4;background:#101B45;border:1.5px solid #38BDF8;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.24)}
-.quiz-game-options{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:22px;position:relative;align-items:stretch}
+.quiz-game-level{font-size:12px;font-weight:800;color:#BAE6FD;background:#111D31;padding:7px 14px;border:1px solid #2879A5;border-radius:8px}
+.quiz-game-timer{position:absolute;left:50%;top:-13px;transform:translateX(-50%);min-width:82px;text-align:center;color:#fff;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;background:#17233A;border:1px solid #38BDF8;padding:6px 12px;border-radius:8px;transition:background-color .25s ease,border-color .25s ease,color .25s ease}
+.quiz-game-timer.is-warning{color:#FEF2F2;background:#3A1414;border-color:#EF4444;animation:quiz-timer-pulse 1s ease-in-out infinite}
+@keyframes quiz-timer-pulse{0%,100%{box-shadow:0 0 0 rgba(239,68,68,.45)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+.quiz-game-question{font-size:clamp(19px,2.3vw,27px);font-weight:700;text-align:center;color:#fff;margin:0 0 25px;padding:30px 7% 26px;line-height:1.4;background:#101B45;border:1.5px solid #38BDF8;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.24);animation:quiz-fade-in .3s ease}
+@keyframes quiz-fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.quiz-game-options{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:22px;position:relative;align-items:stretch;animation:quiz-fade-in .35s ease}
 .quiz-game-options::before{display:none}
 .quiz-opt-btn{
   position:relative;display:flex;align-items:center;gap:14px;text-align:left;padding:14px 20px;
@@ -69,12 +72,12 @@
 .quiz-audience-bar{flex:1;background:var(--orange-soft);border-radius:6px 6px 0 0;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:4px}
 .quiz-audience-bar span{position:absolute;top:-18px;font-size:11px;font-weight:800;color:var(--text-secondary)}
 .quiz-audience-bar em{position:absolute;bottom:-18px;font-size:11px;font-style:normal;font-weight:700;color:var(--muted)}
-.quiz-game-feedback{padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:700;margin:0 auto 14px;max-width:560px;text-align:center}
-.quiz-feedback-correct{background:#ECFDF3;color:#15803D}
-.quiz-feedback-wrong{background:#FEF2F2;color:#DC2626}
-.quiz-feedback-info{background:var(--orange-soft);color:var(--orange-deep)}
+.quiz-game-feedback{padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:700;margin:0 auto 14px;max-width:560px;text-align:center;animation:quiz-fade-in .25s ease;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.quiz-feedback-correct{background:#ECFDF3;color:#15803D;border:1px solid #BBF7D0}
+.quiz-feedback-wrong{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+.quiz-feedback-info{background:var(--orange-soft);color:var(--orange-deep);border:1px solid #FDBA74}
 .quiz-game-footer{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-@media(max-width:720px){.quiz-page-section{padding-top:30px}.quiz-page-hero{margin-bottom:20px}.quiz-game-card{border-radius:20px}.quiz-game-body{padding:26px 16px 24px}.quiz-game-head{width:94%;margin-bottom:18px}.quiz-game-level,.quiz-game-prize{font-size:10px;padding:7px 9px}.quiz-game-timer{font-size:15px;min-width:68px}.quiz-game-question{font-size:19px;padding:28px 7% 23px;margin-bottom:20px}.quiz-game-options{grid-template-columns:1fr;gap:10px}.quiz-opt-btn{font-size:15px;padding:12px 14px;gap:11px}.quiz-opt-letter{width:26px;height:26px;font-size:12px}}
+@media(max-width:720px){.quiz-page-section{padding-top:30px}.quiz-page-hero{margin-bottom:20px}.quiz-game-card{border-radius:20px}.quiz-game-body{padding:26px 16px 24px}.quiz-game-head{width:94%;margin-bottom:18px}.quiz-game-level{font-size:10px;padding:7px 9px}.quiz-game-timer{font-size:15px;min-width:68px}.quiz-game-question{font-size:19px;padding:28px 7% 23px;margin-bottom:20px}.quiz-game-options{grid-template-columns:1fr;gap:10px}.quiz-opt-btn{font-size:15px;padding:12px 14px;gap:11px}.quiz-opt-letter{width:26px;height:26px;font-size:12px}}
 {% endblock %}
 
 {% block content %}
@@ -102,7 +105,6 @@
           <div class="quiz-game-head">
             <span class="quiz-game-level" id="quizLevel">Question 1</span>
             <span class="quiz-game-timer" id="quizTimer">00:30</span>
-            <span class="quiz-game-prize" id="quizPrize"></span>
           </div>
           <p class="quiz-game-question" id="quizQuestionText">Loading…</p>
           <div class="quiz-game-options" id="quizOptions"></div>
@@ -127,8 +129,8 @@
   if (!card) return;
 
   var csrfToken = card.querySelector('[name=csrfmiddlewaretoken]').value;
+  var secondsPerQuestion = {{ quiz_settings.time_limit_seconds|default:30 }};
   var levelEl = document.getElementById('quizLevel');
-  var prizeEl = document.getElementById('quizPrize');
   var questionEl = document.getElementById('quizQuestionText');
   var optionsEl = document.getElementById('quizOptions');
   var audienceEl = document.getElementById('quizAudienceChart');
@@ -163,11 +165,13 @@
 
   function startTimer() {
     stopTimer();
-    var seconds = 30;
+    var seconds = secondsPerQuestion;
+    timerEl.classList.remove('is-warning');
     timerEl.textContent = '00:' + String(seconds).padStart(2, '0');
     timerId = window.setInterval(function () {
       seconds -= 1;
       timerEl.textContent = '00:' + String(Math.max(seconds, 0)).padStart(2, '0');
+      timerEl.classList.toggle('is-warning', seconds <= 10 && seconds > 0);
       if (seconds <= 0) {
         stopTimer();
         currentQuestion = null;
@@ -205,25 +209,41 @@
     questionEl.textContent = 'Loading…';
     optionsEl.innerHTML = '';
 
+    function clearQuestionTranslation() {
+      delete questionEl.dataset.trHi;
+      delete questionEl.dataset.trKn;
+      delete questionEl.dataset.trDefault;
+    }
+
+    function applyCurrentLanguage() {
+      if (typeof applyQuestionTranslations === 'function') {
+        applyQuestionTranslations(localStorage.getItem('site_lang') || 'en');
+      }
+    }
+
     apiCall('{% url "quiz_get_question" %}', 'GET').then(function (data) {
       if (data.finished) {
         currentQuestion = null;
         levelEl.textContent = 'Finished';
-        prizeEl.textContent = '';
+        clearQuestionTranslation();
         questionEl.textContent = '🏆 Congratulations — you have answered every question in the quiz!';
         fiftyBtn.disabled = true; audienceBtn.disabled = true; skipBtn.disabled = true;
         showPlayAgain();
         return;
       }
       if (!data.question) {
+        clearQuestionTranslation();
         questionEl.textContent = 'No quiz questions have been added yet — check back soon.';
         fiftyBtn.disabled = true; audienceBtn.disabled = true; skipBtn.disabled = true;
         return;
       }
       currentQuestion = data.question;
+      var questionTr = data.question.translations || {};
       levelEl.textContent = 'Question ' + data.question.level;
-      prizeEl.textContent = data.question.prize_label || '';
       questionEl.textContent = data.question.text;
+      clearQuestionTranslation();
+      questionEl.dataset.trHi = (questionTr.hi && questionTr.hi.text) || '';
+      questionEl.dataset.trKn = (questionTr.kn && questionTr.kn.text) || '';
       fiftyBtn.disabled = !!data.lifelines_used.fifty;
       audienceBtn.disabled = !!data.lifelines_used.audience;
       skipBtn.disabled = !!data.lifelines_used.skip;
@@ -237,15 +257,19 @@
         var letterSpan = document.createElement('span');
         letterSpan.className = 'quiz-opt-letter';
         letterSpan.textContent = letter;
+        var optionKey = 'option_' + letter.toLowerCase();
         var textSpan = document.createElement('span');
         textSpan.className = 'quiz-opt-text';
-        textSpan.textContent = data.question['option_' + letter.toLowerCase()];
+        textSpan.textContent = data.question[optionKey];
+        textSpan.dataset.trHi = (questionTr.hi && questionTr.hi[optionKey]) || '';
+        textSpan.dataset.trKn = (questionTr.kn && questionTr.kn[optionKey]) || '';
         btn.appendChild(letterSpan);
         btn.appendChild(textSpan);
         btn.addEventListener('click', function () { submitAnswer(letter); });
         optionsEl.appendChild(btn);
       });
       startTimer();
+      applyCurrentLanguage();
     });
   }
 
@@ -273,7 +297,7 @@
       });
 
       if (data.is_correct) {
-        showFeedback('✓ Correct!' + (data.prize_label ? ' You have won ' + data.prize_label + '.' : ''), 'correct');
+        showFeedback('✓ Correct!', 'correct');
         footerEl.hidden = false;
         var nextBtn = document.createElement('button');
         nextBtn.type = 'button';

@@ -113,7 +113,7 @@ input,select,textarea,button{max-width:100%}
 }
 @media (max-width:420px){
   .hero-stats{grid-template-columns:1fr 1fr}.header-actions{grid-template-columns:1fr 1fr}
-  .quiz-game-head{width:100%!important}.quiz-game-level,.quiz-game-prize{max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .quiz-game-head{width:100%!important}.quiz-game-level{max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 </style>
 </head>
@@ -421,7 +421,7 @@ input,select,textarea,button{max-width:100%}
         {% if site_settings.footer_phone %}<li><a href="tel:{{ site_settings.footer_phone }}">{{ site_settings.footer_phone }}</a></li>{% endif %}
         {% if site_settings.footer_email %}<li><a href="mailto:{{ site_settings.footer_email }}">{{ site_settings.footer_email }}</a></li>{% endif %}
         {% if site_settings.footer_address %}<li>{{ site_settings.footer_address }}</li>{% endif %}
-        <li data-i18n="footer_hours">Mon–Sat, 8 am – 8 pm</li>
+        <li>{{ site_settings.contact_timings|default:"Mon–Sat, 8 am – 8 pm" }}</li>
       </ul>
     </div>
   </div>

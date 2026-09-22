@@ -17,6 +17,11 @@ table.panel-table.question-table td.question-cell,table.panel-table.question-tab
 .btn-sm{padding:8px 14px;font-size:13px}
 .btn-danger{background:#FEF2F2;color:#DC2626}
 .btn-danger:hover{background:#DC2626;color:#fff}
+.btn-danger:disabled{opacity:.45;cursor:not-allowed}
+.btn-danger:disabled:hover{background:#FEF2F2;color:#DC2626}
+.question-thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line);vertical-align:middle;margin-right:8px}
+.question-cell-inner{display:flex;align-items:flex-start}
+td.select-cell,th.select-cell{width:36px;text-align:center}
 @media(max-width:700px){.question-filter-bar{align-items:stretch;flex-direction:column}.question-filter{display:grid;grid-template-columns:1fr 1fr}.question-filter label{grid-column:1/-1}.question-filter select{width:100%;min-width:0}.question-filter .btn{width:100%}}
 {% endblock %}
 
@@ -30,6 +35,7 @@ table.panel-table.question-table td.question-cell,table.panel-table.question-tab
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <a class="btn btn-ghost" href="{% url 'panel_course_list' 'test_series' %}">← Back to Test Series</a>
       <a class="btn btn-ghost" href="{% url 'panel_question_bulk_upload' course.pk %}">⬆ Bulk upload</a>
+      <button type="submit" form="bulkDeleteForm" class="btn btn-danger" id="bulkDeleteBtn" disabled>Delete selected</button>
       <a class="btn btn-primary" href="{% url 'panel_question_add' course.pk %}">+ Add question</a>
     </div>
   </div>
@@ -54,11 +60,16 @@ table.panel-table.question-table td.question-cell,table.panel-table.question-tab
   </div>
 
   {% if questions %}
+    <form id="bulkDeleteForm" method="post" action="{% url 'panel_question_bulk_delete' course.pk %}" onsubmit="return confirm('Delete all selected questions? This cannot be undone.');">
+      {% csrf_token %}
+      <input type="hidden" name="section_filter" value="{{ section_filter }}">
+    </form>
     <div class="panel-table-wrap">
       <table class="panel-table question-table">
-        <colgroup><col style="width:70px"><col><col style="width:230px"><col style="width:170px"><col style="width:72px"><col style="width:170px"></colgroup>
+        <colgroup><col style="width:36px"><col style="width:70px"><col><col style="width:230px"><col style="width:170px"><col style="width:72px"><col style="width:190px"></colgroup>
         <thead>
           <tr>
+            <th class="select-cell"><input type="checkbox" id="selectAllQuestions" aria-label="Select all questions"></th>
             <th>Order</th>
             <th>Question</th>
             <th>Section</th>
@@ -70,13 +81,20 @@ table.panel-table.question-table td.question-cell,table.panel-table.question-tab
         <tbody>
           {% for question in questions %}
           <tr>
+            <td class="select-cell"><input type="checkbox" class="question-select" name="question_ids" value="{{ question.pk }}" form="bulkDeleteForm" aria-label="Select this question"></td>
             <td>{{ question.order }}</td>
-            <td class="question-cell" title="{{ question.text }}">{{ question.text|truncatechars:140 }}</td>
+            <td class="question-cell" title="{{ question.text }}">
+              <div class="question-cell-inner">
+                {% if question.question_image %}<img loading="lazy" decoding="async" class="question-thumb" src="{{ question.question_image.url }}" alt="">{% endif %}
+                <span>{{ question.text|truncatechars:140 }}</span>
+              </div>
+            </td>
             <td class="section-cell">{{ question.section.name|default:"General / unassigned" }}</td>
             <td class="type-cell">{{ question.get_question_type_display }}</td>
             <td>{{ question.marks }}</td>
             <td>
               <div class="question-actions">
+                <a class="btn btn-ghost btn-sm" href="{% url 'panel_question_detail' course.pk question.pk %}">View</a>
                 <a class="btn btn-ghost btn-sm" href="{% url 'panel_question_edit' course.pk question.pk %}">Edit</a>
                 <form method="post" action="{% url 'panel_question_delete' course.pk question.pk %}" onsubmit="return confirm('Delete this question?');">
                   {% csrf_token %}
@@ -93,4 +111,25 @@ table.panel-table.question-table td.question-cell,table.panel-table.question-tab
     <p class="panel-empty"><span class="panel-empty-ico">❓</span>{% if filter_active %}No questions found in this section.{% else %}No questions added yet.{% endif %}</p>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var selectAll = document.getElementById('selectAllQuestions');
+  var deleteBtn = document.getElementById('bulkDeleteBtn');
+  var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.question-select'));
+  if (!deleteBtn || !checkboxes.length) return;
+
+  function syncButton() {
+    deleteBtn.disabled = !checkboxes.some(function (cb) { return cb.checked; });
+  }
+  checkboxes.forEach(function (cb) { cb.addEventListener('change', syncButton); });
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      checkboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+      syncButton();
+    });
+  }
+  syncButton();
+})();
 {% endblock %}

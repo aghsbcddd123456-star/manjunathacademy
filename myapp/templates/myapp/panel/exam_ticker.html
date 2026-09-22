@@ -24,6 +24,7 @@
 .ticker-delete{display:flex;align-items:center;gap:7px;color:#b42318;font-size:12px;cursor:pointer}
 .ticker-remove-new{border:0;background:transparent;color:#b42318;font-weight:700;cursor:pointer}
 .ticker-row-fields{display:grid;grid-template-columns:minmax(200px,1.2fr) minmax(205px,.9fr) minmax(220px,1.4fr) 80px 76px;gap:11px;align-items:end}
+.ticker-row-image{margin-top:11px;max-width:360px}.ticker-row-image label>span{display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:7px}
 .ticker-logo-control{display:flex;align-items:center;gap:9px}.ticker-logo-control select{min-width:0}.ticker-admin-logo{display:block;width:42px;height:42px;flex:0 0 42px}.ticker-admin-logo .category-logo{border:1px solid rgba(15,23,42,.06)}
 .ticker-active{display:flex!important;align-items:center;gap:7px;min-height:41px}.ticker-active span{margin:0!important}
 .ticker-save{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
@@ -34,7 +35,7 @@
 {% block content %}
 <div class="panel-card">
   {% if messages %}{% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}{% endif %}
-  <form method="post" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="ticker-settings">
       <label><span>Section heading</span>{{ settings_form.heading }}{% if settings_form.heading.errors %}<ul class="panel-errors">{% for error in settings_form.heading.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>

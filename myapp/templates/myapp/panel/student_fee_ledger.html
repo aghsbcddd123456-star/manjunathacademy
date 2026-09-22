@@ -66,6 +66,19 @@
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
 
+  <div class="panel-filter-bar">
+    <form class="panel-filter" method="get">
+      <label>Status
+        <select name="status" onchange="this.form.submit()">
+          <option value="">All</option>
+          <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+          <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+        </select>
+      </label>
+      {% if status %}<div class="panel-filter-actions"><a class="btn btn-ghost btn-sm" href="{% url 'panel_student_fee_ledger' student.pk %}">Clear</a></div>{% endif %}
+    </form>
+  </div>
+
   {% if invoices %}
     <div class="panel-table-wrap">
       <table class="panel-table">

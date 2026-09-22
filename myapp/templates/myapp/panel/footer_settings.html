@@ -59,7 +59,7 @@
         <li id="pvFooterPhone">{{ site_settings.footer_phone }}</li>
         <li id="pvFooterEmail">{{ site_settings.footer_email }}</li>
         <li id="pvFooterAddress">{{ site_settings.footer_address }}</li>
-        <li>Mon–Sat, 8 am – 8 pm</li>
+        <li>{{ site_settings.contact_timings|default:"Mon–Sat, 8 am – 8 pm" }}</li>
       </ul>
     </div>
   </div>
@@ -84,6 +84,7 @@
       </div>
       <div class="custom-field"><label>Email</label>{{ form.footer_email }}</div>
       <div class="custom-field"><label>Copyright name</label>{{ form.copyright_text }}<p class="custom-help">Shown as "© {{ "now"|date:"Y" }} — your text" at the bottom of the footer.</p></div>
+      <p class="custom-help">Working hours and extra Contact Us page details are managed under Customization → Contact page.</p>
     </div>
 
     <hr class="custom-divider">

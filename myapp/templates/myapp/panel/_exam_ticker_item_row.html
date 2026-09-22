@@ -10,10 +10,17 @@
   </div>
   <div class="ticker-row-fields">
     <label class="ticker-label-field"><span>Label</span>{{ item_form.label }}{% if item_form.label.errors %}<ul class="panel-errors">{% for error in item_form.label.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>
-    <label class="ticker-logo-field"><span>Vector logo</span><span class="ticker-logo-control"><span class="ticker-admin-logo">{% include "myapp/includes/category_logo.html" with icon_key=item_form.instance.logo_key %}</span>{{ item_form.logo_key }}</span>{% if item_form.logo_key.errors %}<ul class="panel-errors">{% for error in item_form.logo_key.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>
+    <label class="ticker-logo-field"><span>Vector logo</span><span class="ticker-logo-control"><span class="ticker-admin-logo">{% include "myapp/includes/category_logo.html" with icon_key=item_form.instance.logo_key image_url=item_form.instance.logo_image_url %}</span>{{ item_form.logo_key }}</span>{% if item_form.logo_key.errors %}<ul class="panel-errors">{% for error in item_form.logo_key.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>
     <label class="ticker-link-field"><span>Link</span>{{ item_form.link }}{% if item_form.link.errors %}<ul class="panel-errors">{% for error in item_form.link.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>
     <label><span>Order</span>{{ item_form.order }}{% if item_form.order.errors %}<ul class="panel-errors">{% for error in item_form.order.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</label>
     <label class="ticker-active">{{ item_form.is_active }} <span>Visible</span></label>
+  </div>
+  <div class="ticker-row-image">
+    <label><span>Custom logo image (optional — used instead of the vector logo above when set)</span>
+      <div class="file-field-box">{{ item_form.logo_image }}</div>
+      {% if item_form.instance.logo_image %}<p class="custom-help">Currently uploaded — choosing a new file replaces it. Recommended size: 128×128px, square.</p>{% else %}<p class="custom-help">Recommended size: 128×128px, square.</p>{% endif %}
+      {% if item_form.logo_image.errors %}<ul class="panel-errors">{% for error in item_form.logo_image.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+    </label>
   </div>
   {% if item_form.non_field_errors %}<ul class="panel-errors">{% for error in item_form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 </div>

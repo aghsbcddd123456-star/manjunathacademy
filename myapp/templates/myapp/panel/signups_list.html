@@ -4,6 +4,7 @@
 {% block page_title %}Signups{% endblock %}
 {% block page_sub %}Everyone who has registered on the site{% endblock %}
 {% block nav_signups %}is-active{% endblock %}
+{% block nav_signups_open %}is-open{% endblock %}
 
 {% block extra_style %}
 .btn-sm{padding:8px 14px;font-size:13px}
@@ -131,7 +132,7 @@
           <tr>
             <td>
               <div class="panel-user-cell">
-                <span class="panel-row-avatar" style="background:{{ avatarColor }}">{{ u.name|default:u.email|first|upper }}</span>
+                {% if u.profile_picture %}<img loading="lazy" decoding="async" class="panel-row-avatar" style="object-fit:cover" src="{{ u.profile_picture.url }}" alt="">{% else %}<span class="panel-row-avatar" style="background:{{ avatarColor }}">{{ u.name|default:u.email|first|upper }}</span>{% endif %}
                 <div>
                   <div class="panel-row-name">{{ u.name }}</div>
                   <div>{{ u.email }}</div>

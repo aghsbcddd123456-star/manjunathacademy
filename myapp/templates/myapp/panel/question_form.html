@@ -12,6 +12,8 @@
   border:1px solid var(--line);border-radius:10px;padding:11px 12px;
   font-size:14px;font-family:inherit;color:var(--ink);resize:vertical;
 }
+.question-image-preview{margin:8px 0}
+.question-image-preview img{max-width:260px;max-height:200px;border-radius:10px;border:1px solid var(--line);display:block}
 #optionFields{display:none}
 #optionFields.is-visible{display:flex;flex-direction:column;gap:16px}
 .tr-details{margin-top:20px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -34,7 +36,7 @@
     <a class="btn btn-ghost" href="{% url 'panel_question_list' course.pk %}">← Back to questions</a>
   </div>
 
-  <form class="panel-form" method="post" novalidate>
+  <form class="panel-form" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
     <label><span class="panel-label-text">Section</span>
@@ -51,6 +53,15 @@
     <label><span class="panel-label-text">Question <span class="req">*</span></span>
       {{ form.text }}
       {% if form.text.errors %}<ul class="panel-errors">{% for e in form.text.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
+    <label><span class="panel-label-text">Diagram / figure</span>
+      {% if question.question_image %}
+        <div class="question-image-preview"><img loading="lazy" decoding="async" src="{{ question.question_image.url }}" alt=""></div>
+      {% endif %}
+      {{ form.question_image }}
+      <p class="custom-help">Optional. Shown under the question text on the panel, in tests, and in results/solutions.{% if question.question_image %} Choosing a new file replaces the current image; tick "Clear" to remove it.{% endif %}</p>
+      {% if form.question_image.errors %}<ul class="panel-errors">{% for e in form.question_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
     <div id="optionFields">

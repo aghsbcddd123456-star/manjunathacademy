@@ -18,7 +18,9 @@
 .erp-amt-income{color:#15803D;font-weight:800}
 .erp-amt-expense{color:#DC2626;font-weight:800}
 .erp-amt-overdue{color:#DC2626;font-weight:800}
-@media (max-width:1080px){.erp-grid{grid-template-columns:1fr}}
+.erp-charts{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;margin-top:24px}
+.erp-chart-card canvas{max-height:260px}
+@media (max-width:1080px){.erp-grid{grid-template-columns:1fr}.erp-charts{grid-template-columns:1fr}}
 {% endblock %}
 
 {% block content %}
@@ -38,6 +40,29 @@
   <div class="panel-stat panel-stat-4">
     <span class="panel-stat-ico">💹</span>
     <div><div class="panel-stat-num">₹{{ month_net }}</div><div class="panel-stat-label">Net this month</div></div>
+  </div>
+</div>
+
+{{ chart_months|json_script:"chartMonths" }}
+{{ chart_income|json_script:"chartIncome" }}
+{{ chart_expense|json_script:"chartExpense" }}
+{{ attendance_labels|json_script:"attendanceLabels" }}
+{{ attendance_pct|json_script:"attendancePct" }}
+{{ fee_chart_paid|json_script:"feeChartPaid" }}
+{{ fee_chart_pending|json_script:"feeChartPending" }}
+
+<div class="erp-charts">
+  <div class="erp-panel erp-chart-card">
+    <h3>Income vs expense — last 6 months</h3>
+    <canvas id="incomeExpenseChart"></canvas>
+  </div>
+  <div class="erp-panel erp-chart-card">
+    <h3>Fee collection</h3>
+    <canvas id="feeCollectionChart"></canvas>
+  </div>
+  <div class="erp-panel erp-chart-card" style="grid-column:1/-1">
+    <h3>Staff attendance — last 7 days</h3>
+    <canvas id="attendanceChart"></canvas>
   </div>
 </div>
 
@@ -101,4 +126,56 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  if (typeof Chart === 'undefined') return;
+  var incomeExpenseEl = document.getElementById('incomeExpenseChart');
+  var feeEl = document.getElementById('feeCollectionChart');
+  var attendanceEl = document.getElementById('attendanceChart');
+  if (!incomeExpenseEl || !feeEl || !attendanceEl) return;
+
+  ['erpIncomeExpenseChart', 'erpFeeChart', 'erpAttendanceChart'].forEach(function (key) {
+    if (window[key]) { window[key].destroy(); window[key] = null; }
+  });
+
+  var months = JSON.parse(document.getElementById('chartMonths').textContent);
+  var income = JSON.parse(document.getElementById('chartIncome').textContent);
+  var expense = JSON.parse(document.getElementById('chartExpense').textContent);
+  var attendanceLabels = JSON.parse(document.getElementById('attendanceLabels').textContent);
+  var attendancePct = JSON.parse(document.getElementById('attendancePct').textContent);
+  var feePaid = JSON.parse(document.getElementById('feeChartPaid').textContent);
+  var feePending = JSON.parse(document.getElementById('feeChartPending').textContent);
+
+  window.erpIncomeExpenseChart = new Chart(incomeExpenseEl, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Income', data: income, backgroundColor: '#16A34A', borderRadius: 6 },
+        { label: 'Expense', data: expense, backgroundColor: '#DC2626', borderRadius: 6 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  window.erpFeeChart = new Chart(feeEl, {
+    type: 'doughnut',
+    data: {
+      labels: ['Collected', 'Pending'],
+      datasets: [{ data: [feePaid, feePending], backgroundColor: ['#16A34A', '#F97316'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  window.erpAttendanceChart = new Chart(attendanceEl, {
+    type: 'line',
+    data: {
+      labels: attendanceLabels,
+      datasets: [{ label: 'Present %', data: attendancePct, borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,.12)', fill: true, tension: 0.35 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+})();
 {% endblock %}

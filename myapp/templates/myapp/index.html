@@ -355,7 +355,7 @@
       <div class="exam-ticker-track" style="animation-duration:{{ exam_ticker_settings.animation_duration }}s">
         {% for item in exam_ticker_items %}
         <a class="exam-ticker-item" href="{{ item.link|default:'#popular-courses' }}">
-          <span class="exam-ticker-icon">{% include "myapp/includes/category_logo.html" with icon_key=item.logo_key %}</span>
+          <span class="exam-ticker-icon">{% include "myapp/includes/category_logo.html" with icon_key=item.logo_key image_url=item.logo_image_url %}</span>
           <span class="exam-ticker-label">{{ item.label }}</span>
           <span class="exam-ticker-go" aria-hidden="true">→</span>
         </a>
@@ -363,7 +363,7 @@
         {% endfor %}
         {% for item in exam_ticker_items %}
         <a class="exam-ticker-item" href="{{ item.link|default:'#popular-courses' }}" aria-hidden="true" tabindex="-1">
-          <span class="exam-ticker-icon">{% include "myapp/includes/category_logo.html" with icon_key=item.logo_key %}</span>
+          <span class="exam-ticker-icon">{% include "myapp/includes/category_logo.html" with icon_key=item.logo_key image_url=item.logo_image_url %}</span>
           <span class="exam-ticker-label">{{ item.label }}</span>
           <span class="exam-ticker-go" aria-hidden="true">→</span>
         </a>

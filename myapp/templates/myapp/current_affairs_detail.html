@@ -1,7 +1,7 @@
 {% extends "myapp/base.html" %}
 
 {% block title %}{{ post.title }} — Manjunath Academy{% endblock %}
-{% block meta_description %}{{ post.body|truncatechars:150 }}{% endblock %}
+{% block meta_description %}{{ post.body|striptags|truncatechars:150 }}{% endblock %}
 
 {% block extra_style %}
 .ca-detail-hero{padding:40px 0 0}
@@ -16,7 +16,14 @@
 .ca-detail-img{width:100%;max-height:400px;object-fit:cover;border-radius:18px;margin-bottom:24px}
 .ca-detail-video{width:100%;aspect-ratio:16/9;border:0;border-radius:18px;background:var(--ink);margin:0 0 24px;display:block}.ca-detail-video-link{display:inline-flex;align-items:center;gap:8px;margin:0 0 24px;padding:11px 16px;border-radius:11px;background:#EFF6FF;color:#1D4ED8;font-size:13.5px;font-weight:800}
 .ca-detail-share{margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--orange-deep);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}.ca-detail-share:hover{background:var(--orange-soft);border-color:#FDBA74}.ca-detail-share svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9}
-.ca-detail-body{color:var(--text-secondary);font-size:16px;line-height:1.8;white-space:pre-line}
+.ca-detail-body{color:var(--text-secondary);font-size:16px;line-height:1.8}
+.ca-detail-body p{margin:0 0 18px}
+.ca-detail-body h2,.ca-detail-body h3{color:var(--ink);margin:28px 0 12px}
+.ca-detail-body ul,.ca-detail-body ol{margin:0 0 18px;padding-left:22px}
+.ca-detail-body li{margin-bottom:8px}
+.ca-detail-body table{width:100%;border-collapse:collapse;margin:0 0 22px;font-size:14px}
+.ca-detail-body th,.ca-detail-body td{border:1px solid var(--line);padding:10px 12px;text-align:left}
+.ca-detail-body th{background:var(--peach);font-weight:700}
 .ca-detail-table-title{font-size:16px;margin:26px 0 14px}
 .ca-detail-table{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:14.5px;box-shadow:var(--shadow-sm);border-radius:12px;overflow:hidden}
 .ca-detail-table th,.ca-detail-table td{border:1px solid var(--line);padding:12px 16px;text-align:left}
@@ -43,17 +50,19 @@
     {% if post.image %}<img loading="lazy" decoding="async" class="ca-detail-img" src="{{ post.image.url }}" alt="{{ post.title }}">{% elif post.thumbnail %}<img loading="lazy" decoding="async" class="ca-detail-img" src="{{ post.thumbnail.url }}" alt="{{ post.title }}">{% endif %}
     {% if post.youtube_embed_url %}<iframe class="ca-detail-video" src="{{ post.youtube_embed_url }}" title="{{ post.title }} video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>{% endif %}
     {% if post.video_url %}{% if post.video_url_is_direct_file %}<video class="ca-detail-video" controls preload="metadata"{% if post.display_thumbnail %} poster="{{ post.display_thumbnail.url }}"{% endif %}><source src="{{ post.video_url }}">Your browser does not support this video.</video>{% else %}<a class="ca-detail-video-link" href="{{ post.video_url }}" target="_blank" rel="noopener">▶ Open related video</a>{% endif %}{% endif %}
-    {% if post.table_rows.all %}
-      <h3 class="ca-detail-table-title">Key facts</h3>
-      <table class="ca-detail-table">
-        <tbody>
-          {% for row in post.table_rows.all %}
-          <tr><th>{{ row.label }}</th><td>{{ row.value }}</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
-    <p class="ca-detail-body" data-ca-id="{{ post.pk }}" data-ca-field="body">{{ post.body }}</p>
+    {% for table in post.tables.all %}
+      {% if table.rows.all %}
+        <h3 class="ca-detail-table-title">{{ table.title }}</h3>
+        <table class="ca-detail-table">
+          <tbody>
+            {% for row in table.rows.all %}
+            <tr><th>{{ row.label }}</th><td>{{ row.value }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    {% endfor %}
+    <div class="ca-detail-body" data-ca-id="{{ post.pk }}" data-ca-field="body">{{ post.body|safe }}</div>
   </div>
 </section>
 <span class="ca-share-status" id="caShareStatus" role="status">Link copied</span>

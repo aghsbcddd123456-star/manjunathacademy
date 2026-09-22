@@ -36,7 +36,7 @@
   <div class="panel-card-head">
     <div>
       <h2>Transactions</h2>
-      <p>{{ transactions|length }} record{{ transactions|length|pluralize }}</p>
+      <p>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</p>
     </div>
     <a class="btn btn-primary" href="{% url 'panel_account_add' %}">+ Add transaction</a>
   </div>
@@ -44,6 +44,36 @@
   {% if messages %}
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
+
+  <div class="panel-filter-bar">
+    <form class="panel-filter" method="get">
+      <label>Search
+        <input type="text" name="q" value="{{ search }}" placeholder="Title, notes">
+      </label>
+      <label>Type
+        <select name="type">
+          <option value="">All</option>
+          {% for value, label in type_choices %}<option value="{{ value }}" {% if value == txn_type %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Category
+        <select name="category">
+          <option value="">All</option>
+          {% for value, label in category_choices %}<option value="{{ value }}" {% if value == category %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>From
+        <input type="date" name="from" value="{{ date_from }}">
+      </label>
+      <label>To
+        <input type="date" name="to" value="{{ date_to }}">
+      </label>
+      <div class="panel-filter-actions">
+        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+        {% if search or txn_type or category or date_from or date_to %}<a class="btn btn-ghost btn-sm" href="{% url 'panel_account_list' %}">Clear</a>{% endif %}
+      </div>
+    </form>
+  </div>
 
   {% if transactions %}
     <div class="panel-table-wrap">
@@ -77,8 +107,9 @@
         </tbody>
       </table>
     </div>
+    {% include "myapp/panel/_pagination.html" %}
   {% else %}
-    <p class="panel-empty"><span class="panel-empty-ico">💹</span>No transactions recorded yet.</p>
+    <p class="panel-empty"><span class="panel-empty-ico">💹</span>No transactions found.</p>
   {% endif %}
 </div>
 {% endblock %}

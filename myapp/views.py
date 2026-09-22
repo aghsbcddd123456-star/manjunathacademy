@@ -10,14 +10,17 @@ import uuid
 from datetime import datetime
 
 import docx
+from docx.oxml.ns import qn
 
 from django.core import signing
+from django.core.files.base import ContentFile
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, F, Q, Sum
 from django.http import Http404, HttpResponse, JsonResponse
@@ -52,12 +55,14 @@ from .forms import (
     TestSectionFormSet,
     DailyUpdateCardForm,
     DailyUpdatePostForm,
+    DailyUpdatePostTableForm,
     DailyUpdatePostTableRowForm,
     EligibilityCheckForm,
     EligibilityCriteriaForm,
     EmailAuthenticationForm,
     ExamCalendarEventForm,
     ExamInstructionsSettingsForm,
+    ContactPageSettingsForm,
     ExamTickerItemFormSet,
     ExamTickerSettingsForm,
     ExtraPageForm,
@@ -71,7 +76,9 @@ from .forms import (
     NavbarCustomizationForm,
     NotificationForm,
     NotificationImageForm,
+    NotificationLinkForm,
     NotificationProviderSettingsForm,
+    NotificationTableForm,
     NotificationTableRowForm,
     ProductForm,
     SSOCompleteSignupForm,
@@ -90,6 +97,7 @@ from .forms import (
     StoreOrderStatusForm,
     TransactionForm,
 )
+from .panel_access import PANEL_SECTIONS, ALL_SECTION_KEYS, user_is_full_admin
 from .models import (
     AdmissionRegistration,
     BannerSlide,
@@ -115,6 +123,7 @@ from .models import (
     DailyUpdateCard,
     DropboxSettings,
     DailyUpdatePost,
+    DailyUpdatePostTable,
     DailyUpdatePostTableRow,
     EligibilityCriteria,
     EligibilitySubmission,
@@ -132,10 +141,13 @@ from .models import (
     JobPosting,
     Notification,
     NotificationImage,
+    NotificationLink,
     NotificationProviderSettings,
+    NotificationTable,
     NotificationTableRow,
     OTPRequest,
     Product,
+    ProductImage,
     PWASettings,
     Question,
     QuizGameSettings,
@@ -163,7 +175,7 @@ from .otp_utils import send_otp
 from . import sso_utils
 from .sso_utils import SSOError
 from . import backup_utils
-from .dropbox_utils import DropboxError
+from .dropbox_utils import DropboxError, DropboxStorageFullError
 from .signals import detect_device
 
 
@@ -348,7 +360,6 @@ def extra_page_view(request, page_key):
 
 
 def contact_us_page(request):
-    page_obj, _ = ExtraPage.objects.get_or_create(page=ExtraPage.CONTACT_US)
     sent = False
     if request.method == 'POST':
         form = ContactMessageForm(request.POST)
@@ -358,7 +369,7 @@ def contact_us_page(request):
             form = ContactMessageForm()
     else:
         form = ContactMessageForm()
-    return render(request, 'myapp/contact_us.html', {'page_obj': page_obj, 'form': form, 'sent': sent})
+    return render(request, 'myapp/contact_us.html', {'form': form, 'sent': sent})
 
 
 def faq_page(request):
@@ -1744,7 +1755,6 @@ def quiz_reset(request):
     request.session['quiz_used_skip'] = False
     request.session['quiz_questions_answered'] = 0
     request.session['quiz_correct_count'] = 0
-    request.session['quiz_last_prize_label'] = ''
     request.session['quiz_recorded'] = False
     return JsonResponse({'ok': True})
 
@@ -1759,7 +1769,7 @@ def _record_quiz_zone_attempt(request):
         user=request.user,
         questions_answered=answered,
         correct_count=request.session.get('quiz_correct_count', 0),
-        final_prize_label=request.session.get('quiz_last_prize_label', ''),
+        final_level=request.session.get('quiz_level', 1),
     )
     request.session['quiz_recorded'] = True
 
@@ -1782,7 +1792,7 @@ def quiz_get_question(request):
             'option_b': question.option_b,
             'option_c': question.option_c,
             'option_d': question.option_d,
-            'prize_label': question.prize_label,
+            'translations': question.translations,
         },
         'lifelines_used': {
             'fifty': request.session.get('quiz_used_fifty', False),
@@ -1804,14 +1814,12 @@ def quiz_submit_answer(request):
     if is_correct:
         request.session['quiz_level'] = question.level + 1
         request.session['quiz_correct_count'] = request.session.get('quiz_correct_count', 0) + 1
-        request.session['quiz_last_prize_label'] = question.prize_label
     else:
         _record_quiz_zone_attempt(request)
     return JsonResponse({
         'ok': True,
         'is_correct': is_correct,
         'correct_option': question.correct_option,
-        'prize_label': question.prize_label,
     })
 
 
@@ -2111,6 +2119,79 @@ def panel_signup_delete(request, pk):
     })
 
 
+def _panel_admin_users():
+    return CustomUser.objects.filter(is_staff=True, is_superuser=False).order_by('name')
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_admin_user_list(request):
+    admins = _panel_admin_users()
+    for admin in admins:
+        admin.is_full_admin = user_is_full_admin(admin)
+    return render(request, 'myapp/panel/admin_user_list.html', {
+        'admins': admins,
+        'super_admins': CustomUser.objects.filter(is_superuser=True).order_by('name'),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_admin_user_permissions(request, pk=None):
+    admin_user = get_object_or_404(_panel_admin_users(), pk=pk) if pk else None
+    lookup_error = None
+
+    if request.method == 'POST':
+        if admin_user is None:
+            email = request.POST.get('email', '').strip()
+            candidate = CustomUser.objects.filter(email__iexact=email).first()
+            if not email:
+                lookup_error = 'Please enter an email address.'
+            elif not candidate:
+                lookup_error = 'No signed-up student found with that email.'
+            elif candidate.is_superuser:
+                lookup_error = 'That account is already a full admin.'
+            elif candidate.is_staff:
+                lookup_error = 'That account already has admin access. Edit it below instead.'
+            else:
+                admin_user = candidate
+
+        if admin_user is not None and lookup_error is None:
+            access_all = request.POST.get('access_all') == 'on'
+            selected = [key for key in request.POST.getlist('permissions') if key in ALL_SECTION_KEYS]
+            admin_user.is_staff = True
+            admin_user.panel_role = request.POST.get('panel_role', '') if request.POST.get('panel_role') in dict(CustomUser.PANEL_ROLE_CHOICES) else ''
+            admin_user.panel_access_all = access_all
+            admin_user.panel_permissions = [] if access_all else selected
+            admin_user.save(update_fields=['is_staff', 'panel_role', 'panel_access_all', 'panel_permissions'])
+            messages.success(request, f'{admin_user.name} now has admin panel access.')
+            return redirect('panel_admin_user_list')
+
+    return render(request, 'myapp/panel/admin_user_permissions.html', {
+        'admin_user': admin_user,
+        'lookup_error': lookup_error,
+        'sections': PANEL_SECTIONS,
+        'role_choices': CustomUser.PANEL_ROLE_CHOICES,
+        'selected_permissions': set(admin_user.panel_permissions or []) if admin_user else set(),
+        'submitted_email': request.POST.get('email', '') if request.method == 'POST' else '',
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_admin_user_remove(request, pk):
+    admin_user = get_object_or_404(_panel_admin_users(), pk=pk)
+    if request.method == 'POST':
+        admin_user.is_staff = False
+        admin_user.panel_role = ''
+        admin_user.panel_access_all = True
+        admin_user.panel_permissions = []
+        admin_user.save(update_fields=['is_staff', 'panel_role', 'panel_access_all', 'panel_permissions'])
+        messages.success(request, f'{admin_user.name} no longer has admin panel access.')
+        return redirect('panel_admin_user_list')
+    return render(request, 'myapp/panel/admin_user_remove_confirm.html', {'admin_user': admin_user})
+
+
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
 def panel_bulk_signup(request):
@@ -2269,13 +2350,15 @@ def panel_notification_edit(request, pk):
         form = NotificationForm(instance=notification)
 
     image_form = NotificationImageForm()
-    table_row_form = NotificationTableRowForm(initial={'order': notification.table_rows.count()})
+    link_form = NotificationLinkForm(initial={'order': notification.extra_links.count()})
+    table_form = NotificationTableForm(initial={'order': notification.tables.count()})
     return render(request, 'myapp/panel/notification_form.html', {
         'form': form,
         'is_new': False,
         'notification': notification,
         'image_form': image_form,
-        'table_row_form': table_row_form,
+        'link_form': link_form,
+        'table_form': table_form,
     })
 
 
@@ -2318,13 +2401,68 @@ def panel_notification_image_delete(request, pk, image_pk):
 
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
-def panel_notification_table_row_add(request, pk):
+def panel_notification_link_add(request, pk):
     notification = get_object_or_404(Notification, pk=pk)
+    if request.method == 'POST':
+        link_form = NotificationLinkForm(request.POST)
+        if link_form.is_valid():
+            link = link_form.save(commit=False)
+            link.notification = notification
+            link.save()
+            messages.success(request, 'Link added')
+        else:
+            messages.error(request, 'Could not add that link — please fill in both fields')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_link_delete(request, pk, link_pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    link = get_object_or_404(NotificationLink, pk=link_pk, notification=notification)
+    if request.method == 'POST':
+        link.delete()
+        messages.success(request, 'Link removed')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_table_add(request, pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    if request.method == 'POST':
+        table_form = NotificationTableForm(request.POST)
+        if table_form.is_valid():
+            table = table_form.save(commit=False)
+            table.notification = notification
+            table.save()
+            messages.success(request, 'Table added')
+        else:
+            messages.error(request, 'Could not add that table — please give it a title')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_table_delete(request, pk, table_pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    table = get_object_or_404(NotificationTable, pk=table_pk, notification=notification)
+    if request.method == 'POST':
+        table.delete()
+        messages.success(request, 'Table removed')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_table_row_add(request, pk, table_pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    table = get_object_or_404(NotificationTable, pk=table_pk, notification=notification)
     if request.method == 'POST':
         row_form = NotificationTableRowForm(request.POST)
         if row_form.is_valid():
             row = row_form.save(commit=False)
-            row.notification = notification
+            row.table = table
             row.save()
             messages.success(request, 'Table row added')
         else:
@@ -2334,9 +2472,43 @@ def panel_notification_table_row_add(request, pk):
 
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
-def panel_notification_table_row_delete(request, pk, row_pk):
+def panel_notification_table_row_delete(request, pk, table_pk, row_pk):
     notification = get_object_or_404(Notification, pk=pk)
-    row = get_object_or_404(NotificationTableRow, pk=row_pk, notification=notification)
+    table = get_object_or_404(NotificationTable, pk=table_pk, notification=notification)
+    row = get_object_or_404(NotificationTableRow, pk=row_pk, table=table)
+    if request.method == 'POST':
+        row.delete()
+        messages.success(request, 'Table row removed')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_table_row_add_legacy(request, pk):
+    # Kept for browser tabs still showing the pre-multi-table edit page (cached/back-forward
+    # cache) — their "+ Add row" form still posts here. Route it into a default table.
+    notification = get_object_or_404(Notification, pk=pk)
+    if request.method == 'POST':
+        row_form = NotificationTableRowForm(request.POST)
+        if row_form.is_valid():
+            table, _ = NotificationTable.objects.get_or_create(
+                notification=notification, defaults={'title': 'Important dates', 'order': 0},
+            )
+            row = row_form.save(commit=False)
+            row.table = table
+            row.save()
+            messages.success(request, 'Table row added')
+        else:
+            messages.error(request, 'Could not add that row — please fill in both fields')
+    messages.info(request, 'This page was out of date — refresh to see the latest layout.')
+    return redirect('panel_notification_edit', pk=notification.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_notification_table_row_delete_legacy(request, pk, row_pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    row = get_object_or_404(NotificationTableRow, pk=row_pk, table__notification=notification)
     if request.method == 'POST':
         row.delete()
         messages.success(request, 'Table row removed')
@@ -2471,7 +2643,8 @@ def panel_daily_post_edit(request, pk):
         form = DailyUpdatePostForm(instance=post)
 
     return render(request, 'myapp/panel/daily_post_form.html', {
-        'form': form, 'is_new': False, 'post': post, 'table_row_form': DailyUpdatePostTableRowForm(),
+        'form': form, 'is_new': False, 'post': post,
+        'table_form': DailyUpdatePostTableForm(initial={'order': post.tables.count()}),
     })
 
 
@@ -2487,13 +2660,41 @@ def panel_daily_post_delete(request, pk):
 
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
-def panel_daily_post_table_row_add(request, pk):
+def panel_daily_post_table_add(request, pk):
     post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
+    if request.method == 'POST':
+        table_form = DailyUpdatePostTableForm(request.POST)
+        if table_form.is_valid():
+            table = table_form.save(commit=False)
+            table.post = post
+            table.save()
+            messages.success(request, 'Table added')
+        else:
+            messages.error(request, 'Could not add that table — please give it a title')
+    return redirect('panel_daily_post_edit', pk=post.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_daily_post_table_delete(request, pk, table_pk):
+    post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
+    table = get_object_or_404(DailyUpdatePostTable, pk=table_pk, post=post)
+    if request.method == 'POST':
+        table.delete()
+        messages.success(request, 'Table removed')
+    return redirect('panel_daily_post_edit', pk=post.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_daily_post_table_row_add(request, pk, table_pk):
+    post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
+    table = get_object_or_404(DailyUpdatePostTable, pk=table_pk, post=post)
     if request.method == 'POST':
         row_form = DailyUpdatePostTableRowForm(request.POST)
         if row_form.is_valid():
             row = row_form.save(commit=False)
-            row.post = post
+            row.table = table
             row.save()
             messages.success(request, 'Table row added')
         else:
@@ -2503,9 +2704,43 @@ def panel_daily_post_table_row_add(request, pk):
 
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
-def panel_daily_post_table_row_delete(request, pk, row_pk):
+def panel_daily_post_table_row_delete(request, pk, table_pk, row_pk):
     post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
-    row = get_object_or_404(DailyUpdatePostTableRow, pk=row_pk, post=post)
+    table = get_object_or_404(DailyUpdatePostTable, pk=table_pk, post=post)
+    row = get_object_or_404(DailyUpdatePostTableRow, pk=row_pk, table=table)
+    if request.method == 'POST':
+        row.delete()
+        messages.success(request, 'Table row removed')
+    return redirect('panel_daily_post_edit', pk=post.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_daily_post_table_row_add_legacy(request, pk):
+    # Kept for browser tabs still showing the pre-multi-table edit page (cached/back-forward
+    # cache) — their "+ Add row" form still posts here. Route it into a default table.
+    post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
+    if request.method == 'POST':
+        row_form = DailyUpdatePostTableRowForm(request.POST)
+        if row_form.is_valid():
+            table, _ = DailyUpdatePostTable.objects.get_or_create(
+                post=post, defaults={'title': 'Key facts', 'order': 0},
+            )
+            row = row_form.save(commit=False)
+            row.table = table
+            row.save()
+            messages.success(request, 'Table row added')
+        else:
+            messages.error(request, 'Could not add that row — please fill in both fields')
+    messages.info(request, 'This page was out of date — refresh to see the latest layout.')
+    return redirect('panel_daily_post_edit', pk=post.pk)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_daily_post_table_row_delete_legacy(request, pk, row_pk):
+    post = get_object_or_404(DailyUpdatePost, pk=pk, category=DailyUpdateCard.CURRENT_AFFAIRS)
+    row = get_object_or_404(DailyUpdatePostTableRow, pk=row_pk, table__post=post)
     if request.method == 'POST':
         row.delete()
         messages.success(request, 'Table row removed')
@@ -2874,23 +3109,27 @@ def panel_course_add(request, course_type):
         )
         sections_are_valid = section_formset is None or section_formset.is_valid()
         if form_is_valid and uploads_are_valid and sections_are_valid:
-            course = form.save(commit=False)
-            course.course_type = course_type
-            course.save()
-            form.save_m2m()
-            if video_formset is not None and not folders_enabled:
-                video_formset.instance = course
-                video_formset.save()
-            if document_formset is not None and not folders_enabled:
-                document_formset.instance = course
-                document_formset.save()
-            if section_formset is not None:
-                section_formset.instance = course
-                section_formset.save()
-            messages.success(request, 'Course added')
-            if folders_enabled:
-                return redirect('panel_course_content', course_type=course_type, pk=course.pk)
-            return redirect('panel_course_list', course_type=course_type)
+            try:
+                course = form.save(commit=False)
+                course.course_type = course_type
+                course.save()
+                form.save_m2m()
+                if video_formset is not None and not folders_enabled:
+                    video_formset.instance = course
+                    video_formset.save()
+                if document_formset is not None and not folders_enabled:
+                    document_formset.instance = course
+                    document_formset.save()
+                if section_formset is not None:
+                    section_formset.instance = course
+                    section_formset.save()
+            except DropboxError as exc:
+                messages.error(request, _upload_error_message(exc))
+            else:
+                messages.success(request, 'Course added')
+                if folders_enabled:
+                    return redirect('panel_course_content', course_type=course_type, pk=course.pk)
+                return redirect('panel_course_list', course_type=course_type)
     else:
         form = CourseForm(initial={'order': Course.objects.filter(course_type=course_type).count()}, course_type=course_type)
         course = Course(course_type=course_type)
@@ -2926,21 +3165,25 @@ def panel_course_edit(request, course_type, pk):
         )
         sections_are_valid = section_formset is None or section_formset.is_valid()
         if form_is_valid and uploads_are_valid and sections_are_valid:
-            course = form.save()
-            if video_formset is not None and validate_flat_uploads:
-                video_formset.save()
-            if document_formset is not None and validate_flat_uploads:
-                document_formset.save()
-            if section_formset is not None:
-                section_formset.save()
-            if folders_were_enabled and not course.enable_folders:
-                course.videos.update(folder=None)
-                course.documents.update(folder=None)
-                course.content_folders.all().delete()
-            messages.success(request, 'Course updated')
-            if course.enable_folders:
-                return redirect('panel_course_content', course_type=course_type, pk=course.pk)
-            return redirect('panel_course_list', course_type=course_type)
+            try:
+                course = form.save()
+                if video_formset is not None and validate_flat_uploads:
+                    video_formset.save()
+                if document_formset is not None and validate_flat_uploads:
+                    document_formset.save()
+                if section_formset is not None:
+                    section_formset.save()
+                if folders_were_enabled and not course.enable_folders:
+                    course.videos.update(folder=None)
+                    course.documents.update(folder=None)
+                    course.content_folders.all().delete()
+            except DropboxError as exc:
+                messages.error(request, _upload_error_message(exc))
+            else:
+                messages.success(request, 'Course updated')
+                if course.enable_folders:
+                    return redirect('panel_course_content', course_type=course_type, pk=course.pk)
+                return redirect('panel_course_list', course_type=course_type)
     else:
         form = CourseForm(instance=course, course_type=course_type)
         video_formset = CourseVideoFormSet(instance=course, prefix='videos') if course_type == Course.VIDEO_COURSE else None
@@ -2961,6 +3204,12 @@ def panel_course_delete(request, course_type, pk):
         course.delete()
         messages.success(request, 'Course deleted')
     return redirect('panel_course_list', course_type=course_type)
+
+
+def _upload_error_message(exc):
+    if isinstance(exc, DropboxStorageFullError):
+        return str(exc)
+    return f'Upload failed: {exc}'
 
 
 def _content_course_or_404(course_type, pk):
@@ -3032,9 +3281,13 @@ def panel_course_content(request, course_type, pk, folder_pk=None):
                 item = upload_form.save(commit=False)
                 item.course = course
                 item.folder = current_folder
-                item.save()
-                messages.success(request, 'Video uploaded.' if course_type == Course.VIDEO_COURSE else 'PDF uploaded')
-                return _course_content_redirect(course, current_folder)
+                try:
+                    item.save()
+                except DropboxError as exc:
+                    messages.error(request, _upload_error_message(exc))
+                else:
+                    messages.success(request, 'Video uploaded.' if course_type == Course.VIDEO_COURSE else 'PDF uploaded')
+                    return _course_content_redirect(course, current_folder)
 
     child_folders = CourseContentFolder.objects.filter(course=course, parent=current_folder).annotate(
         child_count=Count('subfolders', distinct=True),
@@ -3096,9 +3349,13 @@ def panel_course_content_item_edit(request, course_type, pk, item_pk):
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES, instance=item)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Content updated')
-            return _course_content_redirect(course, item.folder)
+            try:
+                form.save()
+            except DropboxError as exc:
+                messages.error(request, _upload_error_message(exc))
+            else:
+                messages.success(request, 'Content updated')
+                return _course_content_redirect(course, item.folder)
     else:
         form = form_class(instance=item)
     return render(request, 'myapp/panel/content_item_form.html', {
@@ -3161,7 +3418,7 @@ def panel_question_list(request, course_pk):
 def panel_question_add(request, course_pk):
     course = get_object_or_404(Course, pk=course_pk, course_type=Course.TEST_SERIES)
     if request.method == 'POST':
-        form = QuestionForm(request.POST, course=course)
+        form = QuestionForm(request.POST, request.FILES, course=course)
         if form.is_valid():
             question = form.save(commit=False)
             question.course = course
@@ -3181,7 +3438,7 @@ def panel_question_edit(request, course_pk, pk):
     question = get_object_or_404(Question, pk=pk, course=course)
 
     if request.method == 'POST':
-        form = QuestionForm(request.POST, instance=question, course=course)
+        form = QuestionForm(request.POST, request.FILES, instance=question, course=course)
         if form.is_valid():
             form.save()
             messages.success(request, 'Question updated')
@@ -3203,13 +3460,56 @@ def panel_question_delete(request, course_pk, pk):
     return redirect('panel_question_list', course_pk=course.pk)
 
 
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_question_bulk_delete(request, course_pk):
+    course = get_object_or_404(Course, pk=course_pk, course_type=Course.TEST_SERIES)
+    if request.method == 'POST':
+        ids = [pk for pk in request.POST.getlist('question_ids') if pk.isdigit()]
+        deleted_count, _ = course.questions.filter(pk__in=ids).delete()
+        if deleted_count:
+            messages.success(request, f'{deleted_count} question{"s" if deleted_count != 1 else ""} deleted')
+        else:
+            messages.error(request, 'No questions were selected')
+    section_filter = request.POST.get('section_filter', '')
+    redirect_url = reverse('panel_question_list', kwargs={'course_pk': course.pk})
+    if section_filter:
+        redirect_url += f'?section={section_filter}'
+    return redirect(redirect_url)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_question_detail(request, course_pk, pk):
+    course = get_object_or_404(Course, pk=course_pk, course_type=Course.TEST_SERIES)
+    question = get_object_or_404(Question.objects.select_related('section'), pk=pk, course=course)
+    options = [
+        ('A', question.option_a), ('B', question.option_b),
+        ('C', question.option_c), ('D', question.option_d),
+    ]
+    correct_keys = {part.strip().upper() for part in question.correct_answer.split(',')} if question.question_type == Question.MULTIPLE else {question.correct_answer.strip().upper()}
+    return render(request, 'myapp/panel/question_detail.html', {
+        'course': course,
+        'course_type': course.course_type,
+        'question': question,
+        'options': options,
+        'correct_keys': correct_keys,
+    })
+
+
 GOOGLE_DOC_ID_RE = re.compile(r'/document/d/([a-zA-Z0-9_-]+)')
-GOOGLE_DOC_QUESTION_PREFIX_RE = re.compile(r'^\s*(?:q(?:uestion)?\s*\d*[.):]|\d+[.)])\s*', re.IGNORECASE)
+GOOGLE_DOC_QUESTION_PREFIX_RE = re.compile(
+    r'^\s*(?:\[\s*q(?:uestion)?\s*\d*\s*\]|q(?:uestion)?\s*\d*[.):]|\d+[.)])\s*', re.IGNORECASE,
+)
 GOOGLE_DOC_OPTION_RE = re.compile(r'^\s*\(?([A-Da-d])\)?\s*[.):]\s*(.*)$')
-GOOGLE_DOC_ANSWER_RE = re.compile(r'^\s*(?:correct\s*)?answer\s*[:\-]\s*(.*)$', re.IGNORECASE)
-GOOGLE_DOC_SOLUTION_RE = re.compile(r'^\s*(?:solution|explanation)\s*[:\-]\s*(.*)$', re.IGNORECASE)
-GOOGLE_DOC_MARKS_RE = re.compile(r'^\s*marks?\s*[:\-]\s*(.*)$', re.IGNORECASE)
-GOOGLE_DOC_SECTION_RE = re.compile(r'^\s*section\s*[:\-]\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_ANSWER_RE = re.compile(
+    r'^\s*(?:\[\s*ans(?:wer)?\s*\]|(?:correct\s*)?answer\s*[:\-])\s*(.*)$', re.IGNORECASE,
+)
+GOOGLE_DOC_SOLUTION_RE = re.compile(
+    r'^\s*(?:\[\s*sol(?:ution)?\s*\]|(?:solution|explanation)\s*[:\-])\s*(.*)$', re.IGNORECASE,
+)
+GOOGLE_DOC_MARKS_RE = re.compile(r'^\s*(?:\[\s*marks?\s*\]|marks?\s*[:\-])\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_SECTION_RE = re.compile(r'^\s*(?:\[\s*section\s*\]|section\s*[:\-])\s*(.*)$', re.IGNORECASE)
 
 
 def _extract_google_doc_id(url):
@@ -3231,32 +3531,95 @@ def _fetch_google_doc_text(doc_id):
         return resp.read().decode('utf-8-sig')
 
 
+IMAGE_MARKER_RE = re.compile(r'^\[\[IMAGE:(\d+)\]\]$')
+
+
+def _docx_paragraph_images(paragraph, document):
+    """Return [(blob, ext), ...] for every embedded image referenced in a docx paragraph."""
+    found = []
+    for blip in paragraph._element.findall('.//' + qn('a:blip')):
+        rel_id = blip.get(qn('r:embed'))
+        if not rel_id:
+            continue
+        rel = document.part.rels.get(rel_id)
+        if rel is None or 'image' not in rel.reltype:
+            continue
+        try:
+            blob = rel.target_part.blob
+            content_type = rel.target_part.content_type
+        except Exception:
+            continue
+        ext = (content_type.split('/')[-1].split('+')[0] or 'png').lower()
+        if ext == 'jpeg':
+            ext = 'jpg'
+        found.append((blob, ext))
+    return found
+
+
 def _extract_text_from_doc_upload(upload):
-    """Return plain text from an uploaded .docx or .txt file (as exported from Google Docs's File > Download menu)."""
+    """Return (text, images) from an uploaded .docx or .txt file (as exported from Google Docs's File > Download menu).
+
+    `images` is a list of (blob, extension) tuples for every diagram embedded in a
+    .docx, in document order. Each image's position is marked in the returned text
+    as its own "[[IMAGE:<index>]]" line so _parse_mcq_doc can attach it to the
+    question block it appeared in. .txt uploads never carry images.
+    """
     name = (upload.name or '').lower()
     if name.endswith('.docx'):
         document = docx.Document(upload)
-        return '\n'.join(p.text for p in document.paragraphs)
+        images = []
+        lines = []
+        for paragraph in document.paragraphs:
+            for blob, ext in _docx_paragraph_images(paragraph, document):
+                images.append((blob, ext))
+                lines.append(f'[[IMAGE:{len(images) - 1}]]')
+            # Keep blank paragraphs as blank lines (even though _docx_paragraph_images
+            # already pulled out anything meaningful) — they're the question separator.
+            lines.append(paragraph.text.strip())
+        return '\n'.join(lines), images
     if name.endswith('.txt'):
         raw = upload.read()
         try:
-            return raw.decode('utf-8-sig')
+            text = raw.decode('utf-8-sig')
         except UnicodeDecodeError:
-            return raw.decode('latin-1')
+            text = raw.decode('latin-1')
+        return text, []
     raise ValueError('Please upload a .docx or .txt file (exported from Google Docs via File → Download).')
 
 
 def _parse_mcq_doc(text):
-    """Parse Q / A-D / Answer blocks (blank-line separated) into MCQ dicts, plus a list of block-level errors."""
+    """Parse Q / A-D / Answer blocks (blank-line separated) into MCQ dicts, plus a list of block-level errors.
+
+    A blank line is normally treated as the boundary between questions, but a
+    paragraph that opens with an option/answer/solution/marks/section marker
+    (e.g. a "[SOL] ..." block sitting on its own after a blank line) is a
+    continuation of the previous question, not a new one, so it's merged back in.
+    """
     questions = []
     errors = []
     normalized = text.replace('\r\n', '\n').replace('\r', '\n')
-    blocks = re.split(r'\n\s*\n', normalized)
-    block_num = 0
-    for raw_block in blocks:
-        lines = [line.strip() for line in raw_block.split('\n') if line.strip()]
-        if not lines:
+    raw_blocks = re.split(r'\n\s*\n', normalized)
+    blocks = []
+    for raw_block in raw_blocks:
+        block_lines = [line.strip() for line in raw_block.split('\n') if line.strip()]
+        if not block_lines:
             continue
+        first_line = block_lines[0]
+        is_continuation = blocks and (
+            IMAGE_MARKER_RE.match(first_line)
+            or GOOGLE_DOC_OPTION_RE.match(first_line)
+            or GOOGLE_DOC_ANSWER_RE.match(first_line)
+            or GOOGLE_DOC_SOLUTION_RE.match(first_line)
+            or GOOGLE_DOC_MARKS_RE.match(first_line)
+            or GOOGLE_DOC_SECTION_RE.match(first_line)
+        )
+        if is_continuation:
+            blocks[-1].extend(block_lines)
+        else:
+            blocks.append(block_lines)
+
+    block_num = 0
+    for lines in blocks:
         block_num += 1
 
         question_text = None
@@ -3265,8 +3628,13 @@ def _parse_mcq_doc(text):
         answer_raw = None
         marks = 1
         section_name = None
+        image_indices = []
         active = 'question'
         for line in lines:
+            image_match = IMAGE_MARKER_RE.match(line)
+            if image_match:
+                image_indices.append(int(image_match.group(1)))
+                continue
             opt_match = GOOGLE_DOC_OPTION_RE.match(line)
             answer_match = GOOGLE_DOC_ANSWER_RE.match(line)
             solution_match = GOOGLE_DOC_SOLUTION_RE.match(line)
@@ -3306,7 +3674,7 @@ def _parse_mcq_doc(text):
             continue
 
         correct_letter = ''
-        warning = None
+        block_warnings = []
         if answer_raw:
             candidate = answer_raw.strip().strip('.').upper()
             if candidate in options:
@@ -3316,7 +3684,10 @@ def _parse_mcq_doc(text):
                 if match_letter:
                     correct_letter = match_letter
                 else:
-                    warning = f'"{question_text[:50]}": could not match answer "{answer_raw}" to an option — left unset.'
+                    block_warnings.append(f'"{question_text[:50]}": could not match answer "{answer_raw}" to an option — left unset.')
+
+        if len(image_indices) > 1:
+            block_warnings.append(f'"{question_text[:50]}": {len(image_indices)} images found in this block — only the first was attached, add the rest manually.')
 
         questions.append({
             'text': question_text,
@@ -3325,7 +3696,8 @@ def _parse_mcq_doc(text):
             'solution': solution_text or '',
             'marks': marks,
             'section_name': section_name,
-            'warning': warning,
+            'image_index': image_indices[0] if image_indices else None,
+            'warning': '; '.join(block_warnings) if block_warnings else None,
         })
 
     return questions, errors
@@ -3349,9 +3721,10 @@ def panel_question_bulk_upload(request, course_pk):
             forced_section = next((s for s in sections_by_name.values() if s.pk == int(target_section_choice)), None)
 
         text = None
+        doc_images = []
         if doc_file:
             try:
-                text = _extract_text_from_doc_upload(doc_file)
+                text, doc_images = _extract_text_from_doc_upload(doc_file)
             except ValueError as exc:
                 messages.error(request, str(exc))
             except Exception:
@@ -3396,7 +3769,7 @@ def panel_question_bulk_upload(request, course_pk):
                                 if section is None:
                                     warnings.append(f'"{q["text"][:50]}": section "{q["section_name"]}" not found — left unassigned.')
 
-                        Question.objects.create(
+                        new_question = Question.objects.create(
                             course=course,
                             section=section,
                             question_type=Question.SINGLE,
@@ -3410,6 +3783,12 @@ def panel_question_bulk_upload(request, course_pk):
                             marks=q['marks'],
                             order=next_order,
                         )
+                        image_index = q.get('image_index')
+                        if image_index is not None and image_index < len(doc_images):
+                            blob, ext = doc_images[image_index]
+                            new_question.question_image.save(
+                                f'question_{new_question.pk}.{ext}', ContentFile(blob), save=True,
+                            )
                         next_order += 1
                         created += 1
 
@@ -3456,6 +3835,15 @@ def panel_question_bulk_template(request, course_pk):
         'Answer: B\n'
         'Solution: 12 x 12 = 144.\n'
         'Marks: 2\n'
+        '\n'
+        '[Q] A resistance is rated for 2.5 kOhm, 1 watt. Determine the maximum voltage and current ratings.\n'
+        '(a) 100 V, 100 mA\n'
+        '(b) 50 V, 200 mA\n'
+        '(c) 100 V, 10 mA\n'
+        '(d) 50 V, 20 mA\n'
+        '[ANS] d\n'
+        '\n'
+        '[SOL] P = V^2/R, so V = sqrt(P x R) = sqrt(1 x 2500) = 50V. I = V/R = 50/2500 = 20 mA.\n'
     )
     response = HttpResponse(sample, content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="question_upload_sample.txt"'
@@ -3582,7 +3970,9 @@ def panel_store_product_add(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            product = form.save()
+            for image_file in request.FILES.getlist('gallery_images'):
+                ProductImage.objects.create(product=product, image=image_file)
             messages.success(request, 'Product added')
             return redirect('panel_store_product_list')
     else:
@@ -3599,7 +3989,12 @@ def panel_store_product_edit(request, pk):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
-            form.save()
+            product = form.save()
+            delete_ids = request.POST.getlist('delete_gallery_images')
+            if delete_ids:
+                product.gallery_images.filter(pk__in=delete_ids).delete()
+            for image_file in request.FILES.getlist('gallery_images'):
+                ProductImage.objects.create(product=product, image=image_file)
             messages.success(request, 'Product updated')
             return redirect('panel_store_product_list')
     else:
@@ -3724,6 +4119,22 @@ def panel_footer_settings(request):
         form = FooterSettingsForm(instance=site_settings_obj)
 
     return render(request, 'myapp/panel/footer_settings.html', {'form': form})
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_contact_page_settings(request):
+    site_settings_obj = SiteSettings.load()
+    if request.method == 'POST':
+        form = ContactPageSettingsForm(request.POST, instance=site_settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Contact page settings saved')
+            return redirect('panel_contact_page_settings')
+    else:
+        form = ContactPageSettingsForm(instance=site_settings_obj)
+
+    return render(request, 'myapp/panel/contact_page_settings.html', {'form': form})
 
 
 @login_required(login_url='login')
@@ -3879,7 +4290,7 @@ def panel_exam_ticker(request):
 
     if request.method == 'POST':
         settings_form = ExamTickerSettingsForm(request.POST, instance=ticker_settings)
-        item_formset = ExamTickerItemFormSet(request.POST, queryset=items, prefix='items')
+        item_formset = ExamTickerItemFormSet(request.POST, request.FILES, queryset=items, prefix='items')
         if settings_form.is_valid() and item_formset.is_valid():
             settings_form.save()
             item_formset.save()
@@ -4288,10 +4699,24 @@ def panel_eligibility_submissions(request):
     return render(request, 'myapp/panel/eligibility_submissions.html', {'submissions': submissions, 'stats': stats})
 
 
+def _months_back(base, n):
+    total = (base.year * 12 + (base.month - 1)) - n
+    year, month0 = divmod(total, 12)
+    return base.replace(year=year, month=month0 + 1, day=1)
+
+
+def _paginate(request, items, per_page=20):
+    paginator = Paginator(items, per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    qs = request.GET.copy()
+    qs.pop('page', None)
+    return page_obj, qs.urlencode()
+
+
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
 def panel_erp_dashboard(request):
-    from datetime import date
+    from datetime import date, timedelta
 
     from django.db.models import Sum
 
@@ -4303,9 +4728,31 @@ def panel_erp_dashboard(request):
 
     pending_fees = FeeInvoice.objects.filter(status=FeeInvoice.STATUS_PENDING)
     pending_fees_total = pending_fees.aggregate(total=Sum('amount'))['total'] or 0
+    paid_fees_total = FeeInvoice.objects.filter(status=FeeInvoice.STATUS_PAID).aggregate(total=Sum('amount'))['total'] or 0
 
     month_income = Transaction.objects.filter(type=Transaction.INCOME, date__gte=month_start).aggregate(total=Sum('amount'))['total'] or 0
     month_expense = Transaction.objects.filter(type=Transaction.EXPENSE, date__gte=month_start).aggregate(total=Sum('amount'))['total'] or 0
+
+    chart_months = []
+    chart_income = []
+    chart_expense = []
+    for i in range(5, -1, -1):
+        m_start = _months_back(month_start, i)
+        m_end = _months_back(month_start, i - 1)
+        income = Transaction.objects.filter(type=Transaction.INCOME, date__gte=m_start, date__lt=m_end).aggregate(total=Sum('amount'))['total'] or 0
+        expense = Transaction.objects.filter(type=Transaction.EXPENSE, date__gte=m_start, date__lt=m_end).aggregate(total=Sum('amount'))['total'] or 0
+        chart_months.append(m_start.strftime('%b %Y'))
+        chart_income.append(float(income))
+        chart_expense.append(float(expense))
+
+    attendance_labels = []
+    attendance_pct = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        present = StaffAttendance.objects.filter(date=d, status=StaffAttendance.PRESENT).count()
+        pct = round((present / total_staff) * 100, 1) if total_staff else 0
+        attendance_labels.append(d.strftime('%d %b'))
+        attendance_pct.append(pct)
 
     return render(request, 'myapp/panel/erp_dashboard.html', {
         'total_staff': total_staff,
@@ -4317,6 +4764,13 @@ def panel_erp_dashboard(request):
         'month_net': month_income - month_expense,
         'recent_transactions': Transaction.objects.all()[:8],
         'overdue_invoices': [inv for inv in pending_fees.select_related('student') if inv.is_overdue][:8],
+        'chart_months': chart_months,
+        'chart_income': chart_income,
+        'chart_expense': chart_expense,
+        'attendance_labels': attendance_labels,
+        'attendance_pct': attendance_pct,
+        'fee_chart_paid': float(paid_fees_total),
+        'fee_chart_pending': float(pending_fees_total),
     })
 
 
@@ -4324,7 +4778,33 @@ def panel_erp_dashboard(request):
 @user_passes_test(_is_staff, login_url='login')
 def panel_staff_list(request):
     staff = StaffMember.objects.all()
-    return render(request, 'myapp/panel/staff_list.html', {'staff': staff})
+
+    search = (request.GET.get('q') or '').strip()
+    department = request.GET.get('department') or ''
+    status = request.GET.get('status') or ''
+
+    if search:
+        staff = staff.filter(Q(name__icontains=search) | Q(designation__icontains=search) | Q(email__icontains=search) | Q(phone__icontains=search))
+    if department:
+        staff = staff.filter(department=department)
+    if status == 'active':
+        staff = staff.filter(is_active=True)
+    elif status == 'left':
+        staff = staff.filter(is_active=False)
+
+    total_count = staff.count()
+    page_obj, querystring = _paginate(request, staff)
+
+    return render(request, 'myapp/panel/staff_list.html', {
+        'staff': page_obj,
+        'total_count': total_count,
+        'page_obj': page_obj,
+        'querystring': querystring,
+        'search': search,
+        'department': department,
+        'status': status,
+        'department_choices': StaffMember.DEPARTMENT_CHOICES,
+    })
 
 
 @login_required(login_url='login')
@@ -4380,7 +4860,11 @@ def panel_attendance(request):
     except ValueError:
         selected_date = date.today()
 
+    search = (request.GET.get('q') or request.POST.get('q') or '').strip()
     staff_list = StaffMember.objects.filter(is_active=True)
+    if search:
+        staff_list = staff_list.filter(Q(name__icontains=search) | Q(designation__icontains=search))
+    staff_list = staff_list.order_by('name')
 
     if request.method == 'POST':
         for staff_member in staff_list:
@@ -4390,7 +4874,10 @@ def panel_attendance(request):
                     staff=staff_member, date=selected_date, defaults={'status': status},
                 )
         messages.success(request, f'Attendance saved for {selected_date:%d %b %Y}')
-        return redirect(f"{reverse('panel_attendance')}?date={selected_date.isoformat()}")
+        redirect_url = f"{reverse('panel_attendance')}?date={selected_date.isoformat()}"
+        if search:
+            redirect_url += f'&q={search}'
+        return redirect(redirect_url)
 
     existing = {a.staff_id: a.status for a in StaffAttendance.objects.filter(date=selected_date)}
     rows = [{'staff': s, 'status': existing.get(s.pk, StaffAttendance.PRESENT)} for s in staff_list]
@@ -4399,6 +4886,7 @@ def panel_attendance(request):
         'rows': rows,
         'selected_date': selected_date,
         'status_choices': StaffAttendance.STATUS_CHOICES,
+        'search': search,
     })
 
 
@@ -4443,8 +4931,20 @@ def panel_payroll_list(request):
         'total_net': sum((p.net_amount for p in payslips.values()), Decimal('0')),
     }
 
+    search = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status') or ''
+    if search:
+        rows = [r for r in rows if search.lower() in r['staff'].name.lower()]
+    if status == 'paid':
+        rows = [r for r in rows if r['payslip'] and r['payslip'].status == StaffSalaryPayment.STATUS_PAID]
+    elif status == 'pending':
+        rows = [r for r in rows if r['payslip'] and r['payslip'].status == StaffSalaryPayment.STATUS_PENDING]
+    elif status == 'not_generated':
+        rows = [r for r in rows if not r['payslip']]
+
     return render(request, 'myapp/panel/payroll_list.html', {
         'rows': rows, 'selected_month': selected_month, 'stats': stats,
+        'search': search, 'status': status,
     })
 
 
@@ -4580,6 +5080,8 @@ def panel_student_attendance(request):
 @login_required(login_url='login')
 @user_passes_test(_is_staff, login_url='login')
 def panel_fee_list(request):
+    from datetime import date
+
     from django.db.models import Sum
 
     invoices = FeeInvoice.objects.select_related('student')
@@ -4588,7 +5090,37 @@ def panel_fee_list(request):
         'pending_total': invoices.filter(status=FeeInvoice.STATUS_PENDING).aggregate(total=Sum('amount'))['total'] or 0,
         'paid_total': invoices.filter(status=FeeInvoice.STATUS_PAID).aggregate(total=Sum('amount'))['total'] or 0,
     }
-    return render(request, 'myapp/panel/fee_list.html', {'invoices': invoices, 'stats': stats})
+
+    search = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status') or ''
+    date_from = parse_date(request.GET.get('from') or '')
+    date_to = parse_date(request.GET.get('to') or '')
+
+    if search:
+        invoices = invoices.filter(Q(student__name__icontains=search) | Q(student__email__icontains=search) | Q(title__icontains=search))
+    if status == 'paid':
+        invoices = invoices.filter(status=FeeInvoice.STATUS_PAID)
+    elif status == 'pending':
+        invoices = invoices.filter(status=FeeInvoice.STATUS_PENDING, due_date__gte=date.today())
+    elif status == 'overdue':
+        invoices = invoices.filter(status=FeeInvoice.STATUS_PENDING, due_date__lt=date.today())
+    if date_from:
+        invoices = invoices.filter(due_date__gte=date_from)
+    if date_to:
+        invoices = invoices.filter(due_date__lte=date_to)
+
+    page_obj, querystring = _paginate(request, invoices)
+
+    return render(request, 'myapp/panel/fee_list.html', {
+        'invoices': page_obj,
+        'page_obj': page_obj,
+        'querystring': querystring,
+        'stats': stats,
+        'search': search,
+        'status': status,
+        'date_from': request.GET.get('from') or '',
+        'date_to': request.GET.get('to') or '',
+    })
 
 
 @login_required(login_url='login')
@@ -4664,8 +5196,15 @@ def panel_student_fee_ledger(request, pk):
         'pending_total': invoices.filter(status=FeeInvoice.STATUS_PENDING).aggregate(total=Sum('amount'))['total'] or 0,
         'paid_total': invoices.filter(status=FeeInvoice.STATUS_PAID).aggregate(total=Sum('amount'))['total'] or 0,
     }
+
+    status = request.GET.get('status') or ''
+    if status == 'paid':
+        invoices = invoices.filter(status=FeeInvoice.STATUS_PAID)
+    elif status == 'pending':
+        invoices = invoices.filter(status=FeeInvoice.STATUS_PENDING)
+
     return render(request, 'myapp/panel/student_fee_ledger.html', {
-        'student': student, 'invoices': invoices, 'stats': stats,
+        'student': student, 'invoices': invoices, 'stats': stats, 'status': status,
     })
 
 
@@ -4674,13 +5213,46 @@ def panel_student_fee_ledger(request, pk):
 def panel_account_list(request):
     from django.db.models import Sum
 
-    transactions = Transaction.objects.all()
+    all_transactions = Transaction.objects.all()
     stats = {
-        'total_income': transactions.filter(type=Transaction.INCOME).aggregate(total=Sum('amount'))['total'] or 0,
-        'total_expense': transactions.filter(type=Transaction.EXPENSE).aggregate(total=Sum('amount'))['total'] or 0,
+        'total_income': all_transactions.filter(type=Transaction.INCOME).aggregate(total=Sum('amount'))['total'] or 0,
+        'total_expense': all_transactions.filter(type=Transaction.EXPENSE).aggregate(total=Sum('amount'))['total'] or 0,
     }
     stats['net'] = stats['total_income'] - stats['total_expense']
-    return render(request, 'myapp/panel/account_list.html', {'transactions': transactions, 'stats': stats})
+
+    transactions = all_transactions
+    search = (request.GET.get('q') or '').strip()
+    txn_type = request.GET.get('type') or ''
+    category = request.GET.get('category') or ''
+    date_from = parse_date(request.GET.get('from') or '')
+    date_to = parse_date(request.GET.get('to') or '')
+
+    if search:
+        transactions = transactions.filter(Q(title__icontains=search) | Q(notes__icontains=search))
+    if txn_type:
+        transactions = transactions.filter(type=txn_type)
+    if category:
+        transactions = transactions.filter(category=category)
+    if date_from:
+        transactions = transactions.filter(date__gte=date_from)
+    if date_to:
+        transactions = transactions.filter(date__lte=date_to)
+
+    page_obj, querystring = _paginate(request, transactions)
+
+    return render(request, 'myapp/panel/account_list.html', {
+        'transactions': page_obj,
+        'page_obj': page_obj,
+        'querystring': querystring,
+        'stats': stats,
+        'search': search,
+        'txn_type': txn_type,
+        'category': category,
+        'date_from': request.GET.get('from') or '',
+        'date_to': request.GET.get('to') or '',
+        'type_choices': Transaction.TYPE_CHOICES,
+        'category_choices': Transaction.CATEGORY_CHOICES,
+    })
 
 
 @login_required(login_url='login')

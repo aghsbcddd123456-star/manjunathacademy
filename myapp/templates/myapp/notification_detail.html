@@ -71,24 +71,31 @@
           </div>
         {% endif %}
 
-        {% if notification.table_rows.all %}
-          <h3 class="notif-exam-table-title">Important dates</h3>
-          <table class="notif-exam-table">
-            <tbody>
-              {% for row in notification.table_rows.all %}
-              <tr><th>{{ row.label }}</th><td>{{ row.value }}</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% endif %}
+        {% for table in notification.tables.all %}
+          {% if table.rows.all %}
+            <h3 class="notif-exam-table-title">{{ table.title }}</h3>
+            <table class="notif-exam-table">
+              <tbody>
+                {% for row in table.rows.all %}
+                <tr><th>{{ row.label }}</th><td>{{ row.value }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% endif %}
+        {% endfor %}
 
         {% if notification.body %}
           <div class="notif-article-body">{{ notification.body|safe }}</div>
         {% endif %}
 
-        {% if notification.link %}
+        {% if notification.link or notification.extra_links.all %}
           <div class="notif-article-cta">
-            <a class="btn btn-primary" href="{{ notification.link }}" target="_blank" rel="noopener">Official notification link →</a>
+            {% if notification.link %}
+              <a class="btn btn-primary" href="{{ notification.link }}" target="_blank" rel="noopener">Official notification link →</a>
+            {% endif %}
+            {% for link in notification.extra_links.all %}
+              <a class="btn btn-ghost" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.label }} →</a>
+            {% endfor %}
           </div>
         {% endif %}
 

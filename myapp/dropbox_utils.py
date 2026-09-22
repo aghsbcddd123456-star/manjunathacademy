@@ -24,6 +24,21 @@ class DropboxError(Exception):
     pass
 
 
+class DropboxStorageFullError(DropboxError):
+    """Raised specifically when Dropbox rejects an upload for lack of space, so callers can show
+    the admin a clear "storage is full" message instead of a generic upload-failed error."""
+    pass
+
+
+def _raise_upload_error(dropbox_path, detail):
+    if 'insufficient_space' in detail or 'quota' in detail.lower():
+        raise DropboxStorageFullError(
+            f'Dropbox storage is full — could not upload {dropbox_path}. Free up space in the '
+            f'connected Dropbox account (or upgrade its plan) and try again.'
+        )
+    raise DropboxError(f'Upload failed for {dropbox_path}: {detail}')
+
+
 def _http_error_detail(exc):
     try:
         return exc.read().decode('utf-8', errors='ignore')
@@ -103,7 +118,13 @@ def upload_bytes(dropbox_path, data):
         with urllib.request.urlopen(req, timeout=120) as resp:
             return json.loads(resp.read().decode('utf-8'))
     except urllib.error.HTTPError as exc:
-        raise DropboxError(f'Upload failed for {dropbox_path}: {_http_error_detail(exc)}')
+        _raise_upload_error(dropbox_path, _http_error_detail(exc))
+    except DropboxError:
+        raise
+    except Exception as exc:
+        # Network hiccups, timeouts, connection resets etc. — anything that isn't an HTTPError
+        # still shouldn't surface as a raw, unhandled exception to the uploader.
+        raise DropboxError(f'Upload failed for {dropbox_path}: {exc}')
 
 
 def upload_file(dropbox_path, local_path):

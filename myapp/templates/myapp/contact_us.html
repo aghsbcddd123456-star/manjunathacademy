@@ -8,13 +8,15 @@
 .legal-card{background:var(--white);border:1px solid var(--line);border-radius:22px;padding:40px;box-shadow:var(--shadow-md)}
 .legal-body{color:var(--text-secondary);font-size:15px;line-height:1.85}
 .legal-body p{margin:0 0 20px}
-.contact-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:26px;align-items:start}
+.contact-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:26px;align-items:stretch}
 .contact-info-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:20px}
 .contact-info-item{display:flex;gap:14px;align-items:flex-start}
 .contact-info-ico{width:44px;height:44px;border-radius:12px;background:var(--orange-soft);color:var(--orange-deep);display:grid;place-items:center;font-size:19px;flex:0 0 auto}
 .contact-info-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 3px}
 .contact-info-value{font-size:14.5px;color:var(--ink);font-weight:600;margin:0}
 .contact-info-value a{color:inherit}
+.contact-more-details{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);color:var(--text-secondary);font-size:13.5px;line-height:1.7}
+.contact-more-details p{margin:0 0 10px}
 .contact-social-row{margin-top:24px}
 .contact-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:16px}
 .contact-form input,.contact-form textarea{
@@ -35,11 +37,7 @@
     <div class="contact-grid">
       <div class="legal-card">
         <div class="legal-body">
-          {% if page_obj.content %}
-            {{ page_obj.content|linebreaks }}
-          {% else %}
-            <p>We're here to help with anything related to your courses, orders or account.</p>
-          {% endif %}
+          <p>{{ site_settings.contact_intro|default:"We're here to help with anything related to your courses, orders or account." }}</p>
         </div>
         {% if sent %}
           <p class="contact-form-success">Thanks — we'll get back to you shortly.</p>
@@ -76,9 +74,12 @@
           {% endif %}
           <li class="contact-info-item">
             <span class="contact-info-ico">🕒</span>
-            <div><p class="contact-info-label">Working hours</p><p class="contact-info-value">Mon–Sat, 8 am – 8 pm</p></div>
+            <div><p class="contact-info-label">Working hours</p><p class="contact-info-value">{{ site_settings.contact_timings|default:"Mon–Sat, 8 am – 8 pm" }}</p></div>
           </li>
         </ul>
+        {% if site_settings.contact_more_details %}
+        <div class="contact-more-details">{{ site_settings.contact_more_details|linebreaks }}</div>
+        {% endif %}
         <div class="contact-social-row social-row">
           {% if site_settings.facebook_url %}<a class="ico-facebook" href="{{ site_settings.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook">📘</a>{% endif %}
           {% if site_settings.instagram_url %}<a class="ico-instagram" href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener" aria-label="Instagram">📷</a>{% endif %}
@@ -89,10 +90,14 @@
           {% if site_settings.whatsapp_link %}<a class="ico-whatsapp" href="{{ site_settings.whatsapp_link }}" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>{% endif %}
         </div>
 
-        {% if site_settings.footer_address %}
+        {% if site_settings.contact_map_url or site_settings.footer_address %}
         <p class="contact-info-label" style="margin-top:22px">Find us on the map</p>
         <div class="contact-map-inline">
-          <iframe src="https://www.google.com/maps?q={{ site_settings.footer_address|urlencode }}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to {{ site_settings.footer_address }}"></iframe>
+          {% if site_settings.contact_map_url %}
+            <iframe src="{{ site_settings.contact_map_url }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to {{ site_settings.footer_address }}"></iframe>
+          {% else %}
+            <iframe src="https://www.google.com/maps?q={{ site_settings.footer_address|urlencode }}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to {{ site_settings.footer_address }}"></iframe>
+          {% endif %}
         </div>
         {% endif %}
       </div>

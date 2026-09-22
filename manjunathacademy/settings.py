@@ -66,7 +66,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapp',
+    # Listed after 'myapp' so myapp/templates/django/forms/widgets/*.html (e.g. the
+    # cleaned-up clearable_file_input override) take precedence over these built-ins.
+    'django.forms',
 ]
+
+# Use the project's own TEMPLATES config (which respects INSTALLED_APPS order) to
+# render form widgets, instead of the default renderer's own hardcoded lookup that
+# always finds django's built-in widget templates first and ignores app overrides.
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -77,6 +85,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'myapp.middleware.SingleSessionMiddleware',
+    'myapp.panel_access.PanelAccessMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -93,6 +102,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'myapp.context_processors.site_settings',
+                'myapp.panel_access.panel_permissions_context',
             ],
         },
     },

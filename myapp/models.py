@@ -61,6 +61,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    PANEL_ROLE_SUBADMIN = 'subadmin'
+    PANEL_ROLE_TEACHER = 'teacher'
+    PANEL_ROLE_CHOICES = [
+        (PANEL_ROLE_SUBADMIN, 'Sub Admin'),
+        (PANEL_ROLE_TEACHER, 'Teacher'),
+    ]
+    panel_role = models.CharField(max_length=20, choices=PANEL_ROLE_CHOICES, blank=True, help_text='Label shown for this admin user; actual access is controlled by the permissions below.')
+    panel_access_all = models.BooleanField(default=True, help_text='Full, unrestricted access to every panel section. Turn off to restrict this admin user to the sections picked below.')
+    panel_permissions = models.JSONField(default=list, blank=True, help_text='List of panel section keys this admin user is allowed to access, when access is restricted.')
     date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
@@ -99,6 +108,23 @@ class SiteSettings(models.Model):
     footer_phone = models.CharField(max_length=20, blank=True, default='+915220000000')
     footer_email = models.EmailField(blank=True, default='hello@manjunathacademy.in')
     copyright_text = models.CharField(max_length=150, blank=True, default='Manjunath Academy')
+    contact_timings = models.CharField(
+        max_length=150, blank=True, default='Mon–Sat, 8 am – 8 pm',
+        help_text='Shown as "Working hours" on the Contact Us page and in the footer.',
+    )
+    contact_more_details = models.TextField(
+        blank=True,
+        help_text='Optional extra info shown on the Contact Us page below the contact details — e.g. an alternate branch, a WhatsApp-only number, or special instructions.',
+    )
+    contact_intro = models.TextField(
+        blank=True,
+        default="We're here to help with anything related to your courses, orders or account. Reach out to us using any of the details below, and our team will get back to you as soon as possible.",
+        help_text='Shown as the intro paragraph on the Contact Us page, above the contact form.',
+    )
+    contact_map_url = models.URLField(
+        blank=True,
+        help_text='Optional — paste the embeddable map link from Google Maps (Share → Embed a map → copy the src URL) to pin the exact location. Falls back to a search using the address above if left blank.',
+    )
     facebook_url = models.URLField(blank=True)
     instagram_url = models.URLField(blank=True)
     twitter_url = models.URLField(blank=True)
@@ -227,8 +253,33 @@ class NotificationImage(models.Model):
         return self.caption or f'Notification image {self.pk}'
 
 
+class NotificationLink(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='extra_links')
+    label = models.CharField(max_length=100, help_text='e.g. Apply Online, Download PDF, Admit Card')
+    url = models.URLField(help_text='https://...')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.label
+
+
+class NotificationTable(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='tables')
+    title = models.CharField(max_length=150, default='Important dates', help_text='e.g. Important Dates, Application Fee, Vacancy Details')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.title
+
+
 class NotificationTableRow(models.Model):
-    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='table_rows')
+    table = models.ForeignKey(NotificationTable, on_delete=models.CASCADE, related_name='rows')
     label = models.CharField(max_length=150, help_text='e.g. Application Start Date, Exam Date, Application Fee')
     value = models.CharField(max_length=150, help_text='e.g. 05 Aug 2026, ₹500')
     order = models.PositiveIntegerField(default=0)
@@ -475,7 +526,7 @@ class DailyUpdatePost(models.Model):
     )
     event_date = models.DateField(default=timezone.localdate, help_text='The date this news is about (used to group Current Affairs by date).')
     title = models.CharField(max_length=200)
-    body = models.TextField()
+    body = models.TextField(help_text='Basic HTML (e.g. <p>, <b>, <ul>, <table>) is allowed.')
     title_hi = models.CharField('Title (Hindi)', max_length=200, blank=True, help_text='Optional. Leave blank to fall back to the English title.')
     body_hi = models.TextField('Body (Hindi)', blank=True, help_text='Optional. Leave blank to fall back to the English body.')
     title_kn = models.CharField('Title (Kannada)', max_length=200, blank=True, help_text='Optional. Leave blank to fall back to the English title.')
@@ -524,8 +575,20 @@ class DailyUpdatePost(models.Model):
         return f'https://www.youtube.com/embed/{youtube_match.group(1)}' if youtube_match else ''
 
 
+class DailyUpdatePostTable(models.Model):
+    post = models.ForeignKey(DailyUpdatePost, on_delete=models.CASCADE, related_name='tables')
+    title = models.CharField(max_length=150, default='Key facts', help_text='e.g. Key Facts, Match Scorecard, Mission Details')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.title
+
+
 class DailyUpdatePostTableRow(models.Model):
-    post = models.ForeignKey(DailyUpdatePost, on_delete=models.CASCADE, related_name='table_rows')
+    table = models.ForeignKey(DailyUpdatePostTable, on_delete=models.CASCADE, related_name='rows')
     label = models.CharField(max_length=150, help_text='e.g. Repo Rate, Series Result, Mission Name')
     value = models.CharField(max_length=150, help_text='e.g. 6.5%, India won 3-2, EOS-09')
     order = models.PositiveIntegerField(default=0)
@@ -991,6 +1054,7 @@ class Question(models.Model):
     section = models.ForeignKey(TestSection, on_delete=models.SET_NULL, null=True, blank=True, related_name='questions')
     question_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=SINGLE)
     text = models.TextField(verbose_name='Question')
+    question_image = models.ImageField(upload_to='questions/', blank=True, null=True, help_text='Optional diagram/figure shown with the question, on the panel and to students.')
     option_a = models.CharField(max_length=300, blank=True)
     option_b = models.CharField(max_length=300, blank=True)
     option_c = models.CharField(max_length=300, blank=True)
@@ -1074,7 +1138,7 @@ class QuizZoneAttempt(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='quiz_zone_attempts')
     questions_answered = models.PositiveIntegerField(default=0)
     correct_count = models.PositiveIntegerField(default=0)
-    final_prize_label = models.CharField(max_length=20, blank=True)
+    final_level = models.PositiveIntegerField(default=1)
     taken_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -1162,6 +1226,19 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='gallery_images')
+    image = models.ImageField(upload_to='store/', help_text='Recommended size: 400×400px.')
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f'{self.product.name} image #{self.pk}'
 
 
 class StoreOrder(models.Model):
@@ -1370,6 +1447,10 @@ class ExamTickerItem(models.Model):
         default='general',
         help_text='Vector logo displayed beside this exam category.',
     )
+    logo_image = models.ImageField(
+        upload_to='exam_ticker_logos/', max_length=500, blank=True, null=True,
+        help_text='Optional custom logo image. If uploaded, it is shown instead of the vector logo above. Recommended size: 128×128px, square.',
+    )
     icon = models.CharField(
         max_length=20,
         blank=True,
@@ -1388,6 +1469,10 @@ class ExamTickerItem(models.Model):
 
     def __str__(self):
         return self.label
+
+    @property
+    def logo_image_url(self):
+        return self.logo_image.url if self.logo_image else ''
 
 
 class Bundle(models.Model):
@@ -1445,8 +1530,11 @@ class QuizQuestion(models.Model):
     option_c = models.CharField(max_length=200)
     option_d = models.CharField(max_length=200)
     correct_option = models.CharField(max_length=1, choices=OPTION_CHOICES, default='A')
-    prize_label = models.CharField(max_length=20, blank=True, help_text='Shown on the money ladder, e.g. ₹10,000')
     is_active = models.BooleanField(default=True)
+    translations = models.JSONField(
+        default=dict, blank=True,
+        help_text='Optional per-language text, e.g. {"hi": {"text": "...", "option_a": "..."}}. Missing languages fall back to the English fields above.',
+    )
 
     class Meta:
         ordering = ['level', 'id']
@@ -1461,6 +1549,9 @@ class QuizGameSettings(models.Model):
         blank=True,
         null=True,
         help_text='MP3 played on loop in the background while the quiz game is open.',
+    )
+    time_limit_seconds = models.PositiveIntegerField(
+        default=30, help_text='How long a student has to answer each question.',
     )
 
     class Meta:
@@ -1889,7 +1980,6 @@ class ExtraPage(models.Model):
         (TERMS_CONDITIONS, 'Terms & Conditions'),
         (REFUND_CANCELLATION, 'Refund & Cancellation Policy'),
         (SHIPPING_DELIVERY, 'Shipping & Delivery Policy'),
-        (CONTACT_US, 'Contact Us'),
         (DISCLAIMER, 'Disclaimer'),
     ]
 

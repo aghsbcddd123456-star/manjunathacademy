@@ -14,6 +14,10 @@
 .course-preview-label{font-size:12.5px;color:var(--muted)}
 .custom-help{font-size:12.5px;color:var(--muted);margin:6px 0 0}
 .panel-form-check{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#374151}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:10px}
+.gallery-item{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#FAFAF9}
+.gallery-item img{width:100%;height:100px;object-fit:cover;display:block}
+.gallery-item-remove{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#DC2626;padding:6px 8px;background:#fff;border-top:1px solid var(--line)}
 @media (max-width:560px){.course-form-row{grid-template-columns:1fr}}
 {% endblock %}
 
@@ -63,6 +67,24 @@
       <div class="course-preview">
         <img loading="lazy" decoding="async" src="{{ product.image.url }}" alt="Current image">
         <span class="course-preview-label">Current image</span>
+      </div>
+    {% endif %}
+
+    <label><span class="panel-label-text">Additional photos</span>
+      <input type="file" name="gallery_images" accept="image/*" multiple>
+      <p class="custom-help">Select multiple images to add extra product photos. Recommended size: 400×400px.</p>
+    </label>
+
+    {% if product.gallery_images.all %}
+      <div class="gallery-grid">
+        {% for img in product.gallery_images.all %}
+          <div class="gallery-item">
+            <img loading="lazy" decoding="async" src="{{ img.image.url }}" alt="Product photo">
+            <label class="gallery-item-remove">
+              <input type="checkbox" name="delete_gallery_images" value="{{ img.pk }}"> Remove
+            </label>
+          </div>
+        {% endfor %}
       </div>
     {% endif %}
 

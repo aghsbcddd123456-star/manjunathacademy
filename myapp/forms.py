@@ -23,6 +23,7 @@ from .models import (
     CustomUser,
     DailyUpdateCard,
     DailyUpdatePost,
+    DailyUpdatePostTable,
     DailyUpdatePostTableRow,
     EligibilityCriteria,
     ExamCalendarEvent,
@@ -39,7 +40,9 @@ from .models import (
     JobPosting,
     Notification,
     NotificationImage,
+    NotificationLink,
     NotificationProviderSettings,
+    NotificationTable,
     NotificationTableRow,
     Product,
     PWASettings,
@@ -387,7 +390,7 @@ class NotificationForm(forms.ModelForm):
         }
         help_texts = {
             'text': 'Shown in the scrolling ticker at the top of the site.',
-            'link': 'Optional. Opens as the "Official notification link" button in the popup and on the details page.',
+            'link': 'Optional. The main link — opens as the "Official notification link" button in the popup and on the details page. Add more links below.',
             'order': 'Lower numbers show first.',
             'title': 'Optional — defaults to the ticker text above if left blank.',
             'cover_image': 'Shown at the top of the full details page. Recommended size: 1200×630px. JPG or PNG, under 2MB.',
@@ -406,6 +409,27 @@ class NotificationImageForm(forms.ModelForm):
         }
 
 
+class NotificationLinkForm(forms.ModelForm):
+    class Meta:
+        model = NotificationLink
+        fields = ('label', 'url', 'order')
+        widgets = {
+            'label': forms.TextInput(attrs={'placeholder': 'e.g. Apply Online, Download PDF'}),
+            'url': forms.URLInput(attrs={'placeholder': 'https://...'}),
+            'order': forms.NumberInput(attrs={'min': 0}),
+        }
+
+
+class NotificationTableForm(forms.ModelForm):
+    class Meta:
+        model = NotificationTable
+        fields = ('title', 'order')
+        widgets = {
+            'title': forms.TextInput(attrs={'placeholder': 'e.g. Important Dates, Application Fee'}),
+            'order': forms.NumberInput(attrs={'min': 0}),
+        }
+
+
 class NotificationTableRowForm(forms.ModelForm):
     class Meta:
         model = NotificationTableRow
@@ -413,6 +437,16 @@ class NotificationTableRowForm(forms.ModelForm):
         widgets = {
             'label': forms.TextInput(attrs={'placeholder': 'e.g. Application Start Date'}),
             'value': forms.TextInput(attrs={'placeholder': 'e.g. 05 Aug 2026'}),
+            'order': forms.NumberInput(attrs={'min': 0}),
+        }
+
+
+class DailyUpdatePostTableForm(forms.ModelForm):
+    class Meta:
+        model = DailyUpdatePostTable
+        fields = ('title', 'order')
+        widgets = {
+            'title': forms.TextInput(attrs={'placeholder': 'e.g. Key Facts, Match Scorecard'}),
             'order': forms.NumberInput(attrs={'min': 0}),
         }
 
@@ -513,7 +547,7 @@ class DailyUpdatePostForm(forms.ModelForm):
             'news_category': forms.Select(),
             'event_date': forms.DateInput(attrs={'type': 'date'}),
             'title': forms.TextInput(attrs={'placeholder': 'e.g. Union Budget 2026: Key Highlights'}),
-            'body': forms.Textarea(attrs={'rows': 8, 'placeholder': 'Full article text'}),
+            'body': forms.Textarea(attrs={'rows': 8, 'placeholder': 'Full article text. You can use basic HTML tags like <p>, <b>, <ul>, <table>.'}),
             'title_hi': forms.TextInput(attrs={'placeholder': 'Optional — Hindi translation of the title'}),
             'body_hi': forms.Textarea(attrs={'rows': 6, 'placeholder': 'Optional — Hindi translation of the body'}),
             'title_kn': forms.TextInput(attrs={'placeholder': 'Optional — Kannada translation of the title'}),
@@ -778,7 +812,7 @@ class QuestionForm(forms.ModelForm):
     class Meta:
         model = Question
         fields = (
-            'section', 'question_type', 'text', 'option_a', 'option_b', 'option_c', 'option_d',
+            'section', 'question_type', 'text', 'question_image', 'option_a', 'option_b', 'option_c', 'option_d',
             'correct_answer', 'solution', 'marks', 'order',
         )
         widgets = {
@@ -1135,6 +1169,30 @@ class FooterSettingsForm(forms.ModelForm):
         }
 
 
+class ContactPageSettingsForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = (
+            'contact_intro', 'footer_address', 'footer_phone', 'footer_email',
+            'contact_timings', 'contact_map_url', 'contact_more_details',
+        )
+        widgets = {
+            'contact_intro': forms.Textarea(attrs={'rows': 3, 'placeholder': "We're here to help with anything related to your courses, orders or account."}),
+            'footer_address': forms.TextInput(attrs={'placeholder': 'e.g. Hazratganj, Lucknow, Uttar Pradesh'}),
+            'footer_phone': forms.TextInput(attrs={'placeholder': '+915220000000'}),
+            'footer_email': forms.EmailInput(attrs={'placeholder': 'hello@example.com'}),
+            'contact_timings': forms.TextInput(attrs={'placeholder': 'e.g. Mon–Sat, 8 am – 8 pm'}),
+            'contact_map_url': forms.URLInput(attrs={'placeholder': 'https://www.google.com/maps/embed?pb=...'}),
+            'contact_more_details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Optional — alternate branch, WhatsApp-only number, special instructions, etc.'}),
+        }
+        help_texts = {
+            'contact_intro': 'Shown as a single intro paragraph above the contact form.',
+            'footer_address': 'Also used for the footer and the default (search-based) map below.',
+            'footer_phone': 'Also shown in the footer.',
+            'footer_email': 'Also shown in the footer.',
+        }
+
+
 class HomepageContentForm(forms.ModelForm):
     class Meta:
         model = HomepageContent
@@ -1203,7 +1261,7 @@ class ExamInstructionsSettingsForm(forms.ModelForm):
 class ExamTickerItemForm(forms.ModelForm):
     class Meta:
         model = ExamTickerItem
-        fields = ('label', 'logo_key', 'link', 'order', 'is_active')
+        fields = ('label', 'logo_key', 'logo_image', 'link', 'order', 'is_active')
         widgets = {
             'logo_key': forms.Select(),
             'label': forms.TextInput(attrs={'placeholder': 'e.g. UPSC Civil Services'}),
@@ -1306,9 +1364,18 @@ class ClassroomAddStudentsForm(forms.Form):
 
 
 class QuizQuestionForm(forms.ModelForm):
+    TRANSLATION_LANGUAGES = (('hi', 'Hindi'), ('kn', 'Kannada'))
+    TRANSLATION_TEXT_FIELDS = (
+        ('text', 'Question'),
+        ('option_a', 'Option A'),
+        ('option_b', 'Option B'),
+        ('option_c', 'Option C'),
+        ('option_d', 'Option D'),
+    )
+
     class Meta:
         model = QuizQuestion
-        fields = ('level', 'text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'prize_label', 'is_active')
+        fields = ('level', 'text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'is_active')
         widgets = {
             'level': forms.NumberInput(attrs={'min': 1}),
             'text': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Type the question here'}),
@@ -1316,17 +1383,57 @@ class QuizQuestionForm(forms.ModelForm):
             'option_b': forms.TextInput(attrs={'placeholder': 'Option B'}),
             'option_c': forms.TextInput(attrs={'placeholder': 'Option C'}),
             'option_d': forms.TextInput(attrs={'placeholder': 'Option D'}),
-            'prize_label': forms.TextInput(attrs={'placeholder': 'e.g. ₹10,000'}),
         }
         help_texts = {
             'level': 'Lower levels are asked first — like a difficulty ladder.',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        translations = self.instance.translations or {}
+        for lang_code, lang_label in self.TRANSLATION_LANGUAGES:
+            lang_data = translations.get(lang_code) or {}
+            for field_name, field_label in self.TRANSLATION_TEXT_FIELDS:
+                key = f'{field_name}_{lang_code}'
+                placeholder = f'{field_label} in {lang_label} (optional)'
+                widget = (
+                    forms.Textarea(attrs={'rows': 2, 'placeholder': placeholder})
+                    if field_name == 'text' else
+                    forms.TextInput(attrs={'placeholder': placeholder})
+                )
+                self.fields[key] = forms.CharField(
+                    required=False, widget=widget,
+                    label=f'{field_label} ({lang_label})',
+                    initial=lang_data.get(field_name, ''),
+                )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        translations = {}
+        for lang_code, _ in self.TRANSLATION_LANGUAGES:
+            lang_data = {}
+            for field_name, _ in self.TRANSLATION_TEXT_FIELDS:
+                value = (self.cleaned_data.get(f'{field_name}_{lang_code}') or '').strip()
+                if value:
+                    lang_data[field_name] = value
+            if lang_data:
+                translations[lang_code] = lang_data
+        instance.translations = translations
+        if commit:
+            instance.save()
+        return instance
+
 
 class QuizGameSettingsForm(forms.ModelForm):
     class Meta:
         model = QuizGameSettings
-        fields = ('background_music',)
+        fields = ('background_music', 'time_limit_seconds')
+        widgets = {
+            'time_limit_seconds': forms.NumberInput(attrs={'min': 5, 'max': 120}),
+        }
+        help_texts = {
+            'time_limit_seconds': 'Seconds each student gets to answer a question.',
+        }
 
 
 class ExtraPageForm(forms.ModelForm):

@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://www.dropbox.com">
 <link rel="dns-prefetch" href="https://www.dropbox.com">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --orange:#F97316;
@@ -227,6 +228,20 @@ h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;letter-spacing:-.01
 .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
 .btn-ghost:hover{border-color:rgba(249,115,22,.5)}
 
+.panel-filter-bar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 18px;padding:14px 16px;border:1px solid #E5E7EB;border-radius:12px;background:#FAFAFA;flex-wrap:wrap}
+.panel-filter{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.panel-filter label{display:grid;gap:6px;color:#374151;font-size:12px;font-weight:800}
+.panel-filter input,.panel-filter select{padding:10px 12px;border:1px solid #D1D5DB;border-radius:9px;background:#fff;color:#111827;font:inherit;min-width:150px}
+.panel-filter input:focus,.panel-filter select:focus{outline:2px solid #FF6B1A;outline-offset:1px}
+.panel-filter-actions{display:flex;gap:8px}
+@media(max-width:760px){.panel-filter-bar{align-items:stretch;flex-direction:column}.panel-filter{display:grid;grid-template-columns:1fr 1fr}.panel-filter label{grid-column:1/-1}.panel-filter input,.panel-filter select{width:100%;min-width:0}.panel-filter-actions{grid-column:1/-1}}
+
+.panel-pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap}
+.panel-pagination a,.panel-pagination span{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 10px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:#fff}
+.panel-pagination a:hover{border-color:rgba(249,115,22,.5);color:var(--orange-deep)}
+.panel-pagination .is-current{background:var(--orange);color:#fff;border-color:var(--orange)}
+.panel-pagination .is-disabled{opacity:.4;pointer-events:none}
+
 .panel-table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
 table.panel-table{width:100%;border-collapse:collapse;font-size:13.5px}
 table.panel-table th{
@@ -348,6 +363,7 @@ html{overflow-x:hidden}
   .category-actions{flex-direction:column}.category-actions .btn{width:100%}
   .video-playlist-admin{padding:14px!important}.video-admin-item{padding:13px!important}.video-admin-item-head{align-items:flex-start!important}.video-admin-item-head-actions{width:100%;justify-content:space-between}
   .file-field-box{padding:10px!important;overflow:hidden}.file-field-box input[type="file"]{font-size:12px}
+  .clearable-file-clear{display:flex!important;align-items:center;gap:6px;margin-bottom:8px;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer}.clearable-file-clear input{width:auto!important}
   .dash-grid,.erp-grid,.backup-grid,.card-grid,.panel-charts{grid-template-columns:1fr!important}
 }
 </style>
@@ -394,46 +410,90 @@ html{overflow-x:hidden}
       <a class="{% block nav_dashboard %}{% endblock %}" href="{% url 'panel_dashboard' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="dashboard" %} Dashboard
       </a>
-      <a class="{% block nav_signups %}{% endblock %}" href="{% url 'panel_signups' %}">
-        {% include "myapp/panel/includes/nav_icon.html" with icon_name="users" %} Signups
-      </a>
+      {% if panel_is_full_admin or 'signups' in panel_allowed_sections %}
+      <div class="panel-nav-group {% block nav_signups_open %}{% endblock %}" id="navSignupsGroup">
+        <button type="button" class="panel-nav-group-toggle {% block nav_signups_group %}{% endblock %}" id="navSignupsToggle">
+          {% include "myapp/panel/includes/nav_icon.html" with icon_name="users" %} Signups
+          <svg class="panel-nav-group-caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="panel-nav-subgroup">
+          {% if panel_is_full_admin or 'signups' in panel_allowed_sections %}
+          <a class="panel-nav-sub {% block nav_signups %}{% endblock %}" href="{% url 'panel_signups' %}">
+            {% include "myapp/panel/includes/nav_icon.html" with icon_name="users" %} All Signups
+          </a>
+          {% endif %}
+          {% if panel_is_full_admin %}
+          <a class="panel-nav-sub {% block nav_admin_users %}{% endblock %}" href="{% url 'panel_admin_user_list' %}">
+            {% include "myapp/panel/includes/nav_icon.html" with icon_name="key" %} Admin Users
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% if panel_is_full_admin or 'customization_hero' in panel_allowed_sections or 'customization_navbar' in panel_allowed_sections or 'customization_banner' in panel_allowed_sections or 'customization_homepage' in panel_allowed_sections or 'customization_exam_ticker' in panel_allowed_sections or 'customization_results' in panel_allowed_sections or 'customization_footer' in panel_allowed_sections or 'customization_extra_pages' in panel_allowed_sections %}
       <div class="panel-nav-group {% block nav_customization_open %}{% endblock %}" id="navCustomizationGroup">
         <button type="button" class="panel-nav-group-toggle {% block nav_customization %}{% endblock %}" id="navCustomizationToggle">
           {% include "myapp/panel/includes/nav_icon.html" with icon_name="customization" %} Customization
           <svg class="panel-nav-group-caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="panel-nav-subgroup">
+          {% if panel_is_full_admin or 'customization_hero' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_hero_customization %}{% endblock %}" href="{% url 'panel_hero_section' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="hero" %} Hero section
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_navbar' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_navbar_customization %}{% endblock %}" href="{% url 'panel_navbar_customization' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="navbar" %} Navbar
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_banner' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_banner_customization %}{% endblock %}" href="{% url 'panel_banner_list' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="banner" %} Banner
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_homepage' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_homepage_customization %}{% endblock %}" href="{% url 'panel_homepage_content' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="homepage_content" %} Homepage content
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_exam_ticker' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_exam_ticker_customization %}{% endblock %}" href="{% url 'panel_exam_ticker' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="exam_ticker" %} Exam ticker
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_results' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_results_customization %}{% endblock %}" href="{% url 'panel_result_list' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="results_photos" %} Results photos
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_footer' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_footer_customization %}{% endblock %}" href="{% url 'panel_footer_settings' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="footer" %} Footer
           </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_contact_page' in panel_allowed_sections %}
+          <a class="panel-nav-sub {% block nav_contact_page_customization %}{% endblock %}" href="{% url 'panel_contact_page_settings' %}">
+            {% include "myapp/panel/includes/nav_icon.html" with icon_name="contact" %} Contact page
+          </a>
+          {% endif %}
+          {% if panel_is_full_admin or 'customization_extra_pages' in panel_allowed_sections %}
           <a class="panel-nav-sub {% block nav_extra_pages_customization %}{% endblock %}" href="{% url 'panel_extra_page_list' %}">
             {% include "myapp/panel/includes/nav_icon.html" with icon_name="extra_pages" %} Extra pages
           </a>
+          {% endif %}
         </div>
       </div>
+      {% endif %}
 
+      {% if panel_is_full_admin or 'categories' in panel_allowed_sections or 'test_series' in panel_allowed_sections or 'video_courses' in panel_allowed_sections or 'elibrary' in panel_allowed_sections or 'bundles' in panel_allowed_sections or 'classrooms' in panel_allowed_sections %}
       <p class="panel-nav-label">Content</p>
+      {% if panel_is_full_admin or 'categories' in panel_allowed_sections %}
       <a class="{% block nav_categories %}{% endblock %}" href="{% url 'panel_category_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="categories" %} Categories
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'test_series' in panel_allowed_sections %}
       <div class="panel-nav-group {% if course_type == 'test_series' %}is-open{% endif %}" id="navTestSeriesGroup">
         <button type="button" class="panel-nav-group-toggle {% if course_type == 'test_series' %}is-active{% endif %}" id="navTestSeriesToggle">
           {% include "myapp/panel/includes/nav_icon.html" with icon_name="test_series" %} Test Series
@@ -451,55 +511,80 @@ html{overflow-x:hidden}
           </a>
         </div>
       </div>
+      {% endif %}
+      {% if panel_is_full_admin or 'video_courses' in panel_allowed_sections %}
       <a class="{% if course_type == 'video_course' %}is-active{% endif %}" href="{% url 'panel_course_list' 'video_course' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="video" %} Video Courses
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'elibrary' in panel_allowed_sections %}
       <a class="{% if course_type == 'elibrary' %}is-active{% endif %}" href="{% url 'panel_course_list' 'elibrary' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="library" %} E-Library
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'bundles' in panel_allowed_sections %}
       <a class="{% block nav_bundles %}{% endblock %}" href="{% url 'panel_bundle_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="bundles" %} Bundles
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'classrooms' in panel_allowed_sections %}
       <a class="{% block nav_classrooms %}{% endblock %}" href="{% url 'panel_classroom_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="classrooms" %} Classrooms
       </a>
+      {% endif %}
+      {% endif %}
 
+      {% if panel_is_full_admin or 'store_products' in panel_allowed_sections or 'store_orders' in panel_allowed_sections or 'store_coupons' in panel_allowed_sections or 'refer_earn' in panel_allowed_sections or 'career_jobs' in panel_allowed_sections or 'career_applications' in panel_allowed_sections or 'razorpay' in panel_allowed_sections or 'sms_email' in panel_allowed_sections or 'sso' in panel_allowed_sections or 'dropbox' in panel_allowed_sections %}
       <p class="panel-nav-label">Commerce</p>
+      {% if panel_is_full_admin or 'store_products' in panel_allowed_sections or 'store_orders' in panel_allowed_sections or 'store_coupons' in panel_allowed_sections or 'refer_earn' in panel_allowed_sections %}
       <div class="panel-nav-group {% block nav_store_open %}{% endblock %}">
         <button type="button" class="panel-nav-group-toggle {% block nav_store %}{% endblock %}">
           {% include "myapp/panel/includes/nav_icon.html" with icon_name="store" %} E-Store
           <svg class="panel-nav-group-caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="panel-nav-subgroup">
-          <a class="panel-nav-sub {% block nav_store_products %}{% endblock %}" href="{% url 'panel_store_product_list' %}">Products</a>
-          <a class="panel-nav-sub {% block nav_store_orders %}{% endblock %}" href="{% url 'panel_store_orders' %}">Orders</a>
-          <a class="panel-nav-sub {% block nav_store_coupons %}{% endblock %}" href="{% url 'panel_coupon_list' %}">Coupons</a>
-          <a class="panel-nav-sub {% block nav_refer_earn %}{% endblock %}" href="{% url 'panel_refer_earn' %}">Refer &amp; Earn</a>
+          {% if panel_is_full_admin or 'store_products' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_store_products %}{% endblock %}" href="{% url 'panel_store_product_list' %}">Products</a>{% endif %}
+          {% if panel_is_full_admin or 'store_orders' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_store_orders %}{% endblock %}" href="{% url 'panel_store_orders' %}">Orders</a>{% endif %}
+          {% if panel_is_full_admin or 'store_coupons' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_store_coupons %}{% endblock %}" href="{% url 'panel_coupon_list' %}">Coupons</a>{% endif %}
+          {% if panel_is_full_admin or 'refer_earn' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_refer_earn %}{% endblock %}" href="{% url 'panel_refer_earn' %}">Refer &amp; Earn</a>{% endif %}
         </div>
       </div>
+      {% endif %}
+      {% if panel_is_full_admin or 'career_jobs' in panel_allowed_sections or 'career_applications' in panel_allowed_sections %}
       <div class="panel-nav-group {% block nav_career_open %}{% endblock %}">
         <button type="button" class="panel-nav-group-toggle {% block nav_career %}{% endblock %}">
           {% include "myapp/panel/includes/nav_icon.html" with icon_name="career" %} Career
           <svg class="panel-nav-group-caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="panel-nav-subgroup">
-          <a class="panel-nav-sub {% block nav_career_jobs %}{% endblock %}" href="{% url 'panel_career_job_list' %}">Post Job</a>
-          <a class="panel-nav-sub {% block nav_career_applications %}{% endblock %}" href="{% url 'panel_career_applications' %}">User Applied</a>
+          {% if panel_is_full_admin or 'career_jobs' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_career_jobs %}{% endblock %}" href="{% url 'panel_career_job_list' %}">Post Job</a>{% endif %}
+          {% if panel_is_full_admin or 'career_applications' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_career_applications %}{% endblock %}" href="{% url 'panel_career_applications' %}">User Applied</a>{% endif %}
         </div>
       </div>
+      {% endif %}
+      {% if panel_is_full_admin or 'razorpay' in panel_allowed_sections %}
       <a class="{% block nav_razorpay %}{% endblock %}" href="{% url 'panel_razorpay_settings' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="payment" %} Razorpay
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'sms_email' in panel_allowed_sections %}
       <a class="{% block nav_sms_email %}{% endblock %}" href="{% url 'panel_notification_provider_settings' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="communication" %} SMS &amp; Email
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'sso' in panel_allowed_sections %}
       <a class="{% block nav_sso %}{% endblock %}" href="{% url 'panel_sso_settings' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="key" %} SSO Login
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'dropbox' in panel_allowed_sections %}
       <a class="{% block nav_dropbox %}{% endblock %}" href="{% url 'panel_dropbox_settings' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="backup" %} Database Backup
       </a>
+      {% endif %}
+      {% endif %}
 
+      {% if panel_is_full_admin or 'erp_dashboard' in panel_allowed_sections or 'erp_staff' in panel_allowed_sections or 'erp_attendance' in panel_allowed_sections or 'erp_payroll' in panel_allowed_sections or 'erp_student_attendance' in panel_allowed_sections or 'erp_fees' in panel_allowed_sections or 'erp_accounts' in panel_allowed_sections %}
       <p class="panel-nav-label">Operations (ERP)</p>
       <div class="panel-nav-group {% block nav_erp_open %}{% endblock %}">
         <button type="button" class="panel-nav-group-toggle {% block nav_erp %}{% endblock %}">
@@ -507,38 +592,55 @@ html{overflow-x:hidden}
           <svg class="panel-nav-group-caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="panel-nav-subgroup">
-          <a class="panel-nav-sub {% block nav_erp_dashboard %}{% endblock %}" href="{% url 'panel_erp_dashboard' %}">Dashboard</a>
-          <a class="panel-nav-sub {% block nav_erp_staff %}{% endblock %}" href="{% url 'panel_staff_list' %}">Staff</a>
-          <a class="panel-nav-sub {% block nav_erp_attendance %}{% endblock %}" href="{% url 'panel_attendance' %}">Staff attendance</a>
-          <a class="panel-nav-sub {% block nav_erp_payroll %}{% endblock %}" href="{% url 'panel_payroll_list' %}">Payroll</a>
-          <a class="panel-nav-sub {% block nav_erp_student_attendance %}{% endblock %}" href="{% url 'panel_student_attendance' %}">Student attendance</a>
-          <a class="panel-nav-sub {% block nav_erp_fees %}{% endblock %}" href="{% url 'panel_fee_list' %}">Fees</a>
-          <a class="panel-nav-sub {% block nav_erp_accounts %}{% endblock %}" href="{% url 'panel_account_list' %}">Accounts</a>
+          {% if panel_is_full_admin or 'erp_dashboard' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_dashboard %}{% endblock %}" href="{% url 'panel_erp_dashboard' %}">Dashboard</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_staff' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_staff %}{% endblock %}" href="{% url 'panel_staff_list' %}">Staff</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_attendance' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_attendance %}{% endblock %}" href="{% url 'panel_attendance' %}">Staff attendance</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_payroll' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_payroll %}{% endblock %}" href="{% url 'panel_payroll_list' %}">Payroll</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_student_attendance' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_student_attendance %}{% endblock %}" href="{% url 'panel_student_attendance' %}">Student attendance</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_fees' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_fees %}{% endblock %}" href="{% url 'panel_fee_list' %}">Fees</a>{% endif %}
+          {% if panel_is_full_admin or 'erp_accounts' in panel_allowed_sections %}<a class="panel-nav-sub {% block nav_erp_accounts %}{% endblock %}" href="{% url 'panel_account_list' %}">Accounts</a>{% endif %}
         </div>
       </div>
+      {% endif %}
 
+      {% if panel_is_full_admin or 'notifications' in panel_allowed_sections or 'chatbot' in panel_allowed_sections or 'daily_updates' in panel_allowed_sections or 'gallery' in panel_allowed_sections or 'quiz' in panel_allowed_sections or 'certificates' in panel_allowed_sections or 'exam_calendar' in panel_allowed_sections or 'eligibility' in panel_allowed_sections or 'admissions' in panel_allowed_sections or 'contact_messages' in panel_allowed_sections %}
       <p class="panel-nav-label">Engagement</p>
+      {% if panel_is_full_admin or 'notifications' in panel_allowed_sections %}
       <a class="{% block nav_notification_customization %}{% endblock %}" href="{% url 'panel_notification_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="notifications" %} Notifications
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'chatbot' in panel_allowed_sections %}
       <a class="{% block nav_chatbot %}{% endblock %}" href="{% url 'panel_chatbot_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="chatbot" %} Chatbot
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'daily_updates' in panel_allowed_sections %}
       <a class="{% block nav_daily_updates %}{% endblock %}" href="{% url 'panel_daily_updates' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="news" %} Current Affairs
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'gallery' in panel_allowed_sections %}
       <a class="{% block nav_gallery %}{% endblock %}" href="{% url 'panel_gallery_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="gallery" %} Gallery
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'quiz' in panel_allowed_sections %}
       <a class="{% block nav_quiz %}{% endblock %}" href="{% url 'panel_quiz_question_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="quiz" %} Quiz Game
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'certificates' in panel_allowed_sections %}
       <a class="{% block nav_certificates %}{% endblock %}" href="{% url 'panel_certificate_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="certificates" %} Certificates
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'exam_calendar' in panel_allowed_sections %}
       <a class="{% block nav_exam_calendar %}{% endblock %}" href="{% url 'panel_exam_calendar_list' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="calendar" %} Exam Calendar
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'eligibility' in panel_allowed_sections %}
       <div class="panel-nav-group {% block nav_eligibility_open %}{% endblock %}">
         <button type="button" class="panel-nav-group-toggle {% block nav_eligibility %}{% endblock %}">
           {% include "myapp/panel/includes/nav_icon.html" with icon_name="eligibility" %} Eligibility
@@ -549,17 +651,25 @@ html{overflow-x:hidden}
           <a class="panel-nav-sub {% block nav_eligibility_submissions %}{% endblock %}" href="{% url 'panel_eligibility_submissions' %}">Submissions</a>
         </div>
       </div>
+      {% endif %}
+      {% if panel_is_full_admin or 'admissions' in panel_allowed_sections %}
       <a class="{% block nav_admissions %}{% endblock %}" href="{% url 'panel_admissions' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="admission" %} Offline Admission
       </a>
+      {% endif %}
+      {% if panel_is_full_admin or 'contact_messages' in panel_allowed_sections %}
       <a class="{% block nav_contact_messages %}{% endblock %}" href="{% url 'panel_contact_messages' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="contact" %} Contact Messages
       </a>
+      {% endif %}
+      {% endif %}
 
+      {% if panel_is_full_admin or 'pwa' in panel_allowed_sections %}
       <p class="panel-nav-label">Settings</p>
       <a class="{% block nav_pwa %}{% endblock %}" href="{% url 'panel_pwa_settings' %}">
         {% include "myapp/panel/includes/nav_icon.html" with icon_name="apps" %} Apps
       </a>
+      {% endif %}
     </nav>
   </aside>
 
@@ -701,7 +811,7 @@ html{overflow-x:hidden}
 
     function loadPage(url, push) {
       contentEl.style.opacity = '0.45';
-      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
         .then(function (res) {
           if (!res.ok || res.redirected) { window.location.href = url; return null; }
           return res.text();
@@ -744,6 +854,10 @@ html{overflow-x:hidden}
 
     window.addEventListener('popstate', function () {
       loadPage(window.location.href, false);
+    });
+
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) window.location.reload();
     });
   })();
 

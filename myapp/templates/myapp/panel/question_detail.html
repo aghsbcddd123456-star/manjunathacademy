@@ -1,0 +1,71 @@
+{% extends "myapp/panel/base.html" %}
+
+{% block title %}Question — {{ course.name }}{% endblock %}
+{% block page_title %}View question{% endblock %}
+{% block page_sub %}{{ course.name }}{% endblock %}
+{% block nav_test_series %}is-active{% endblock %}
+
+{% block extra_style %}
+.qd-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.qd-meta span{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12px;font-weight:700;color:#4B5563}
+.qd-text{font-size:16px;font-weight:700;color:var(--ink);line-height:1.55;margin-bottom:16px}
+.qd-image{margin:0 0 20px}
+.qd-image img{max-width:100%;max-height:420px;border-radius:12px;border:1px solid var(--line);display:block}
+.qd-options{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.qd-option{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.qd-option.is-correct{border-color:#86EFAC;background:#F0FDF4}
+.qd-option-letter{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;font-size:12.5px}
+.qd-option.is-correct .qd-option-letter{background:#16A34A;color:#fff}
+.qd-option-text{padding-top:2px;color:var(--ink)}
+.qd-option-text:empty::before{content:"(no text — see figure)";color:var(--muted);font-style:italic}
+.qd-answer{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:14px;margin-bottom:18px}
+.qd-solution{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#FFF7ED;font-size:14px;line-height:1.6;white-space:pre-wrap}
+.qd-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:800;margin:0 0 8px}
+{% endblock %}
+
+{% block content %}
+<div class="panel-card">
+  <div class="panel-card-head">
+    <div>
+      <h2>Question {{ question.order }}</h2>
+      <p>{{ course.name }}</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <a class="btn btn-ghost" href="{% url 'panel_question_list' course.pk %}">← Back to questions</a>
+      <a class="btn btn-primary" href="{% url 'panel_question_edit' course.pk question.pk %}">Edit</a>
+    </div>
+  </div>
+
+  <div class="qd-meta">
+    <span>{{ question.get_question_type_display }}</span>
+    <span>{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+    <span>{{ question.section.name|default:"General / unassigned" }}</span>
+  </div>
+
+  <p class="qd-text">{{ question.text }}</p>
+
+  {% if question.question_image %}
+  <div class="qd-image"><img src="{{ question.question_image.url }}" alt=""></div>
+  {% endif %}
+
+  {% if question.question_type == 'single' or question.question_type == 'multiple' %}
+  <p class="qd-section-title">Options</p>
+  <div class="qd-options">
+    {% for letter, text in options %}
+    <div class="qd-option {% if letter in correct_keys %}is-correct{% endif %}">
+      <span class="qd-option-letter">{{ letter }}</span>
+      <span class="qd-option-text">{{ text }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="qd-section-title">Correct answer</p>
+  <div class="qd-answer">{{ question.correct_answer }}</div>
+  {% endif %}
+
+  {% if question.solution %}
+  <p class="qd-section-title">Solution</p>
+  <div class="qd-solution">{{ question.solution }}</div>
+  {% endif %}
+</div>
+{% endblock %}

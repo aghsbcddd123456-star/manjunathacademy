@@ -18,6 +18,9 @@
 .pd-stock-out{background:#FEF2F2;color:#DC2626}
 .pd-desc{color:var(--text-secondary);font-size:14.5px;line-height:1.8;white-space:pre-line;margin:0 0 24px}
 .pd-actions{display:flex;gap:12px;flex-wrap:wrap}
+.pd-thumbs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.pd-thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid transparent;background:#F3F1EE}
+.pd-thumbs img.is-active{border-color:var(--orange-deep)}
 @media (max-width:760px){.pd-grid{grid-template-columns:1fr}}
 {% endblock %}
 
@@ -26,9 +29,21 @@
   <div class="wrap pd-grid">
     <div>
       {% if product.image %}
-        <img loading="lazy" decoding="async" class="pd-thumb" src="{{ product.image.url }}" alt="{{ product.name }}">
+        <img loading="lazy" decoding="async" class="pd-thumb" id="pdMainImage" src="{{ product.image.url }}" alt="{{ product.name }}">
+      {% elif product.gallery_images.all %}
+        <img loading="lazy" decoding="async" class="pd-thumb" id="pdMainImage" src="{{ product.gallery_images.first.image.url }}" alt="{{ product.name }}">
       {% else %}
         <div class="pd-thumb-empty">📦</div>
+      {% endif %}
+      {% if product.gallery_images.all %}
+        <div class="pd-thumbs">
+          {% if product.image %}
+            <img loading="lazy" decoding="async" src="{{ product.image.url }}" class="is-active" onclick="document.getElementById('pdMainImage').src=this.src;document.querySelectorAll('.pd-thumbs img').forEach(function(t){t.classList.remove('is-active')});this.classList.add('is-active')" alt="">
+          {% endif %}
+          {% for img in product.gallery_images.all %}
+            <img loading="lazy" decoding="async" src="{{ img.image.url }}" {% if not product.image and forloop.first %}class="is-active"{% endif %} onclick="document.getElementById('pdMainImage').src=this.src;document.querySelectorAll('.pd-thumbs img').forEach(function(t){t.classList.remove('is-active')});this.classList.add('is-active')" alt="">
+          {% endfor %}
+        </div>
       {% endif %}
     </div>
     <div class="pd-info">

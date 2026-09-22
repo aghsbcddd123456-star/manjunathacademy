@@ -22,7 +22,7 @@
   <div class="panel-card-head">
     <div>
       <h2>Staff</h2>
-      <p>{{ staff|length }} staff member{{ staff|length|pluralize }}</p>
+      <p>{{ total_count }} staff member{{ total_count|pluralize }}</p>
     </div>
     <a class="btn btn-primary" href="{% url 'panel_staff_add' %}">+ Add staff</a>
   </div>
@@ -30,6 +30,31 @@
   {% if messages %}
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
+
+  <div class="panel-filter-bar">
+    <form class="panel-filter" method="get">
+      <label>Search
+        <input type="text" name="q" value="{{ search }}" placeholder="Name, designation, email, phone">
+      </label>
+      <label>Department
+        <select name="department">
+          <option value="">All departments</option>
+          {% for value, label in department_choices %}<option value="{{ value }}" {% if value == department %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="left" {% if status == 'left' %}selected{% endif %}>Left</option>
+        </select>
+      </label>
+      <div class="panel-filter-actions">
+        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+        {% if search or department or status %}<a class="btn btn-ghost btn-sm" href="{% url 'panel_staff_list' %}">Clear</a>{% endif %}
+      </div>
+    </form>
+  </div>
 
   {% if staff %}
     <div class="panel-table-wrap">
@@ -73,8 +98,9 @@
         </tbody>
       </table>
     </div>
+    {% include "myapp/panel/_pagination.html" %}
   {% else %}
-    <p class="panel-empty"><span class="panel-empty-ico">👨‍🏫</span>No staff members added yet.</p>
+    <p class="panel-empty"><span class="panel-empty-ico">👨‍🏫</span>No staff members found.</p>
   {% endif %}
 </div>
 {% endblock %}

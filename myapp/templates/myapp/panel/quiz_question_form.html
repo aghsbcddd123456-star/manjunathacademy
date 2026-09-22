@@ -8,6 +8,14 @@
 {% block extra_style %}
 .course-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .panel-form-check{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#374151}
+.custom-help{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.tr-details{margin-top:20px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tr-details + .tr-details{margin-top:12px}
+.tr-details summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;background:var(--surface-2);list-style:none}
+.tr-details summary::-webkit-details-marker{display:none}
+.tr-details summary::before{content:"▸ ";color:var(--orange)}
+.tr-details[open] summary::before{content:"▾ "}
+.tr-details-body{padding:18px}
 @media (max-width:560px){.course-form-row{grid-template-columns:1fr}}
 {% endblock %}
 
@@ -24,10 +32,7 @@
   <form class="panel-form" method="post" novalidate>
     {% csrf_token %}
 
-    <div class="panel-form-row course-form-row">
-      <label><span class="panel-label-text">Level</span>{{ form.level }}<p class="custom-help">{{ form.level.help_text }}</p></label>
-      <label><span class="panel-label-text">Prize label</span>{{ form.prize_label }}</label>
-    </div>
+    <label><span class="panel-label-text">Level</span>{{ form.level }}<p class="custom-help">{{ form.level.help_text }}</p></label>
 
     <label><span class="panel-label-text">Question <span class="req">*</span></span>
       {{ form.text }}
@@ -48,6 +53,38 @@
     </label>
 
     <label class="panel-form-check">{{ form.is_active }} Active</label>
+
+    <p class="custom-help">Translations are optional. A student who switches the site to Hindi or Kannada sees the translated text below; anything left blank falls back to the English text above.</p>
+
+    <details class="tr-details">
+      <summary>Hindi translation</summary>
+      <div class="tr-details-body">
+        <label><span class="panel-label-text">{{ form.text_hi.label }}</span>{{ form.text_hi }}</label>
+        <div class="course-form-row" style="margin-top:16px">
+          <label><span class="panel-label-text">{{ form.option_a_hi.label }}</span>{{ form.option_a_hi }}</label>
+          <label><span class="panel-label-text">{{ form.option_b_hi.label }}</span>{{ form.option_b_hi }}</label>
+        </div>
+        <div class="course-form-row" style="margin-top:16px">
+          <label><span class="panel-label-text">{{ form.option_c_hi.label }}</span>{{ form.option_c_hi }}</label>
+          <label><span class="panel-label-text">{{ form.option_d_hi.label }}</span>{{ form.option_d_hi }}</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="tr-details">
+      <summary>Kannada translation</summary>
+      <div class="tr-details-body">
+        <label><span class="panel-label-text">{{ form.text_kn.label }}</span>{{ form.text_kn }}</label>
+        <div class="course-form-row" style="margin-top:16px">
+          <label><span class="panel-label-text">{{ form.option_a_kn.label }}</span>{{ form.option_a_kn }}</label>
+          <label><span class="panel-label-text">{{ form.option_b_kn.label }}</span>{{ form.option_b_kn }}</label>
+        </div>
+        <div class="course-form-row" style="margin-top:16px">
+          <label><span class="panel-label-text">{{ form.option_c_kn.label }}</span>{{ form.option_c_kn }}</label>
+          <label><span class="panel-label-text">{{ form.option_d_kn.label }}</span>{{ form.option_d_kn }}</label>
+        </div>
+      </div>
+    </details>
 
     {% if form.non_field_errors %}
       <ul class="panel-errors">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>

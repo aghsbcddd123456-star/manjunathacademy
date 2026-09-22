@@ -35,7 +35,7 @@
   <div class="panel-card-head">
     <div>
       <h2>Fee invoices</h2>
-      <p>{{ invoices|length }} invoice{{ invoices|length|pluralize }}</p>
+      <p>{{ page_obj.paginator.count }} invoice{{ page_obj.paginator.count|pluralize }}</p>
     </div>
     <a class="btn btn-primary" href="{% url 'panel_fee_add' %}">+ Create invoice</a>
   </div>
@@ -43,6 +43,32 @@
   {% if messages %}
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
+
+  <div class="panel-filter-bar">
+    <form class="panel-filter" method="get">
+      <label>Search
+        <input type="text" name="q" value="{{ search }}" placeholder="Student, invoice title">
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="">All</option>
+          <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+          <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="overdue" {% if status == 'overdue' %}selected{% endif %}>Overdue</option>
+        </select>
+      </label>
+      <label>Due from
+        <input type="date" name="from" value="{{ date_from }}">
+      </label>
+      <label>Due to
+        <input type="date" name="to" value="{{ date_to }}">
+      </label>
+      <div class="panel-filter-actions">
+        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+        {% if search or status or date_from or date_to %}<a class="btn btn-ghost btn-sm" href="{% url 'panel_fee_list' %}">Clear</a>{% endif %}
+      </div>
+    </form>
+  </div>
 
   {% if invoices %}
     <div class="panel-table-wrap">
@@ -90,8 +116,9 @@
         </tbody>
       </table>
     </div>
+    {% include "myapp/panel/_pagination.html" %}
   {% else %}
-    <p class="panel-empty"><span class="panel-empty-ico">🧾</span>No fee invoices yet.</p>
+    <p class="panel-empty"><span class="panel-empty-ico">🧾</span>No fee invoices found.</p>
   {% endif %}
 </div>
 {% endblock %}

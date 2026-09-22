@@ -25,6 +25,24 @@
 .post-table-rows td:last-child{width:44px;text-align:center}
 .post-table-rows button{border:0;background:none;color:#DC2626;font-size:15px;cursor:pointer;font-family:inherit}
 .btn-sm{padding:8px 14px;font-size:13px}
+.notif-html-help{background:#FAFAF9;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:-6px 0 16px}
+.notif-html-help-title{font-size:12.5px;font-weight:800;color:var(--ink);margin:0 0 10px}
+.notif-html-help-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px}
+.notif-html-help-grid div{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.notif-html-help-grid code{background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:11.5px;color:var(--orange-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notif-html-help-grid span{color:var(--muted);flex:0 0 auto}
+.notif-html-help-note{font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.6;word-break:break-all}
+.notif-html-help-note code{background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--ink)}
+.notif-table-block{border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;background:#fff}
+.notif-table-block-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.notif-table-block-head h4{font-size:14.5px;font-weight:800;margin:0}
+.notif-table-block-head button{
+  width:26px;height:26px;border-radius:50%;border:0;background:rgba(220,38,38,.9);color:#fff;
+  cursor:pointer;font-size:12px;line-height:1;display:inline-grid;place-items:center;padding:0;
+}
+.notif-add-table-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:14px;background:#FAFAF9;border:1px dashed var(--line);border-radius:12px;margin-top:8px}
+.notif-add-table-form label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+@media (max-width:560px){.notif-html-help-grid{grid-template-columns:1fr}}
 {% endblock %}
 
 {% block content %}
@@ -59,8 +77,24 @@
 
     <label><span class="panel-label-text">Body <span class="req">*</span></span>
       {{ form.body }}
+      <p class="custom-help">{{ form.body.help_text }}</p>
       {% if form.body.errors %}<ul class="panel-errors">{% for e in form.body.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
+
+    <div class="notif-html-help">
+      <p class="notif-html-help-title">Allowed HTML tags — type these directly in the box above</p>
+      <div class="notif-html-help-grid">
+        <div><code>&lt;p&gt;Text&lt;/p&gt;</code><span>Paragraph</span></div>
+        <div><code>&lt;b&gt;Text&lt;/b&gt;</code><span>Bold text</span></div>
+        <div><code>&lt;i&gt;Text&lt;/i&gt;</code><span>Italic text</span></div>
+        <div><code>&lt;h3&gt;Text&lt;/h3&gt;</code><span>Section heading</span></div>
+        <div><code>&lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;</code><span>Bullet list</span></div>
+        <div><code>&lt;ol&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ol&gt;</code><span>Numbered list</span></div>
+        <div><code>&lt;a href="https://..."&gt;Text&lt;/a&gt;</code><span>Link</span></div>
+        <div><code>&lt;table&gt;&lt;tr&gt;&lt;td&gt;...&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</code><span>Table</span></div>
+      </div>
+      <p class="notif-html-help-note">Example: <code>&lt;p&gt;Some text with &lt;b&gt;bold&lt;/b&gt;.&lt;/p&gt;&lt;h3&gt;A heading&lt;/h3&gt;&lt;ul&gt;&lt;li&gt;Point one&lt;/li&gt;&lt;li&gt;Point two&lt;/li&gt;&lt;/ul&gt;</code></p>
+    </div>
 
     <label><span class="panel-label-text">Title (Hindi)</span>
       {{ form.title_hi }}
@@ -126,41 +160,64 @@
 
   {% if not is_new %}
     <hr class="panel-form-divider">
-    <p class="panel-form-subtitle">Key facts table</p>
-    <p class="panel-form-subhelp">Shown as a table (e.g. Repo Rate, Series Result, Mission Name) on the article page, above the body text.</p>
+    <p class="panel-form-subtitle">Key facts tables</p>
+    <p class="panel-form-subhelp">Add one or more tables (e.g. Key Facts, Match Scorecard, Mission Details) shown on the article page, above the body text.</p>
 
-    {% if post.table_rows.all %}
-      <table class="post-table-rows">
-        <thead><tr><th>Label</th><th>Value</th><th></th></tr></thead>
-        <tbody>
-          {% for row in post.table_rows.all %}
-          <tr>
-            <td>{{ row.label }}</td>
-            <td>{{ row.value }}</td>
-            <td>
-              <form method="post" action="{% url 'panel_daily_post_table_row_delete' post.pk row.pk %}" onsubmit="return confirm('Remove this row?');">
-                {% csrf_token %}
-                <button type="submit" aria-label="Remove row">✕</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
+    {% for table in post.tables.all %}
+      <div class="notif-table-block">
+        <div class="notif-table-block-head">
+          <h4>{{ table.title }}</h4>
+          <form method="post" action="{% url 'panel_daily_post_table_delete' post.pk table.pk %}" onsubmit="return confirm('Remove this whole table and its rows?');">
+            {% csrf_token %}
+            <button type="submit" aria-label="Remove table">✕</button>
+          </form>
+        </div>
 
-    <form class="table-row-add" method="post" action="{% url 'panel_daily_post_table_row_add' post.pk %}">
+        {% if table.rows.all %}
+          <table class="post-table-rows">
+            <thead><tr><th>Label</th><th>Value</th><th></th></tr></thead>
+            <tbody>
+              {% for row in table.rows.all %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.value }}</td>
+                <td>
+                  <form method="post" action="{% url 'panel_daily_post_table_row_delete' post.pk table.pk row.pk %}" onsubmit="return confirm('Remove this row?');">
+                    {% csrf_token %}
+                    <button type="submit" aria-label="Remove row">✕</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
+        <form class="table-row-add" method="post" action="{% url 'panel_daily_post_table_row_add' post.pk table.pk %}">
+          {% csrf_token %}
+          <label>Label
+            <input type="text" name="label" placeholder="e.g. Repo Rate">
+          </label>
+          <label>Value
+            <input type="text" name="value" placeholder="e.g. 6.5%">
+          </label>
+          <label>Order
+            <input type="number" name="order" min="0" value="{{ table.rows.count }}">
+          </label>
+          <button type="submit" class="btn btn-ghost btn-sm">+ Add row</button>
+        </form>
+      </div>
+    {% endfor %}
+
+    <form class="notif-add-table-form" method="post" action="{% url 'panel_daily_post_table_add' post.pk %}">
       {% csrf_token %}
-      <label>Label
-        {{ table_row_form.label }}
-      </label>
-      <label>Value
-        {{ table_row_form.value }}
+      <label>Table title
+        {{ table_form.title }}
       </label>
       <label>Order
-        {{ table_row_form.order }}
+        {{ table_form.order }}
       </label>
-      <button type="submit" class="btn btn-ghost btn-sm">+ Add row</button>
+      <button type="submit" class="btn btn-primary btn-sm">+ Add table</button>
     </form>
   {% endif %}
 </div>
