@@ -1,8 +1,19 @@
 {% extends "myapp/base.html" %}
 {% block title %}Performance Analysis — {{ attempt.course.name }}{% endblock %}
 {% block extra_style %}
-.performance-page{padding:32px 0 80px;background:var(--surface-2);min-height:70vh}.performance-wrap{max-width:1140px}.performance-title{font-size:20px;font-weight:500;color:var(--text-secondary);margin:0 0 24px}.performance-title strong{color:#4264E8}.metric-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}.metric-card{min-width:0;padding:20px 14px;border-left:3px solid #536DFE;border-radius:4px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.metric-card:nth-child(2){border-color:#22B8CF}.metric-card:nth-child(3){border-color:#20C77A}.metric-card:nth-child(4){border-color:#EF4438}.metric-card:nth-child(5){border-color:#F5A623}.metric-card:nth-child(6){border-color:#7C3AED}.metric-card small{display:block;overflow:hidden;margin-bottom:8px;color:#536DFE;font-size:10px;font-weight:800;text-transform:uppercase;white-space:nowrap}.metric-card strong{font-size:20px;font-weight:500;color:var(--text-secondary)}.performance-grid{display:grid;grid-template-columns:1.05fr 1.05fr 1.1fr;gap:16px}.performance-panel{overflow:hidden;border-radius:4px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.performance-panel h2{padding:13px 14px;border-bottom:1px solid var(--line);color:#536DFE;font-size:15px;font-weight:500;margin:0}.leaderboard-list{padding:10px 14px;max-height:390px;overflow-y:auto}.leader-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)}.leader-row:last-child{border-bottom:0}.leader-copy strong{display:block;font-size:13px}.leader-copy small{color:var(--muted);font-size:11px}.leader-rank{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#81889A;color:#fff;font-size:12px;font-weight:800}.leader-row:first-child .leader-rank{background:#F5B700;color:#fff}.overview-body{display:grid;place-items:center;min-height:325px;padding:25px}.score-chart{position:relative;display:grid;place-items:center;width:220px;height:220px;border-radius:50%;background:conic-gradient(#3DD19B 0 calc(var(--correct)*1%),#EF6461 calc(var(--correct)*1%) calc((var(--correct) + var(--incorrect))*1%),var(--line) calc((var(--correct) + var(--incorrect))*1%) 100%)}.score-chart::before{content:"";width:125px;height:125px;border-radius:50%;background:var(--white)}.score-chart-label{position:absolute;text-align:center}.score-chart-label strong{display:block;font-size:26px}.score-chart-label small{color:var(--muted)}.chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:18px;color:var(--muted);font-size:11px}.chart-legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background:#3DD19B}.chart-legend span:nth-child(2)::before{background:#EF6461}.chart-legend span:nth-child(3)::before{background:var(--line)}.compare-table{padding:8px 14px 18px}.compare-head,.compare-row{display:grid;grid-template-columns:1.2fr .7fr .8fr;gap:8px;padding:11px 4px;border-bottom:1px solid var(--line);font-size:12px}.compare-head{color:#22B8CF;font-size:13px}.compare-row span:first-child{color:#22B8CF}.panel-note{padding:12px 14px;background:var(--surface-3);color:var(--muted);font-size:11px;line-height:1.45}.section-performance{margin-top:18px;padding:18px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.section-performance h2{font-size:16px;margin:0 0 14px}.section-bars{display:grid;gap:12px}.section-row{display:grid;grid-template-columns:180px minmax(0,1fr) 100px;align-items:center;gap:12px;font-size:12.5px}.section-track{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.section-fill{height:100%;background:#536DFE}.solution-actions{display:flex;justify-content:flex-end;gap:10px;margin:18px 0}.solution-list{display:none}.solution-list.is-visible{display:block}.solution-card{padding:16px 18px;margin-bottom:10px;border-left:4px solid #DC2626;background:var(--white);box-shadow:0 2px 8px rgba(15,23,42,.06)}.solution-card.correct{border-color:#16A34A}.solution-card h3{font-size:13.5px;margin:0 0 8px}.solution-card-image{max-width:100%;max-height:260px;border-radius:8px;border:1px solid var(--line);display:block;margin:0 0 10px}.solution-card p{font-size:12px;color:var(--text-secondary);margin:4px 0}.result-nav{display:flex;justify-content:center;gap:10px;margin-top:24px}
-@media(max-width:1000px){.metric-grid{grid-template-columns:repeat(3,1fr)}.performance-grid{grid-template-columns:1fr 1fr}.performance-panel.compare{grid-column:1/-1}}@media(max-width:640px){.performance-page{padding-top:22px}.metric-grid{grid-template-columns:1fr 1fr}.performance-grid{grid-template-columns:1fr}.performance-panel.compare{grid-column:auto}.section-row{grid-template-columns:1fr}.solution-actions{justify-content:stretch}.solution-actions .btn{flex:1}}
+.performance-page{padding:32px 0 80px;background:var(--surface-2);min-height:70vh}.performance-wrap{max-width:1140px}.performance-title{font-size:20px;font-weight:500;color:var(--text-secondary);margin:0 0 24px}.performance-title strong{color:#4264E8}.metric-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}.metric-card{min-width:0;padding:20px 14px;border-left:3px solid #536DFE;border-radius:4px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.metric-card:nth-child(2){border-color:#22B8CF}.metric-card:nth-child(3){border-color:#20C77A}.metric-card:nth-child(4){border-color:#EF4438}.metric-card:nth-child(5){border-color:#F5A623}.metric-card:nth-child(6){border-color:#7C3AED}.metric-card small{display:block;overflow:hidden;margin-bottom:8px;color:#536DFE;font-size:10px;font-weight:800;text-transform:uppercase;white-space:nowrap}.metric-card strong{font-size:20px;font-weight:500;color:var(--text-secondary)}.performance-grid{display:grid;grid-template-columns:1.05fr 1.05fr 1.1fr;gap:16px}.performance-panel{overflow:hidden;border-radius:4px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.performance-panel h2{padding:13px 14px;border-bottom:1px solid var(--line);color:#536DFE;font-size:15px;font-weight:500;margin:0}.leaderboard-list{padding:10px 14px;max-height:390px;overflow-y:auto}.leader-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)}.leader-row:last-child{border-bottom:0}.leader-copy strong{display:block;font-size:13px}.leader-copy small{color:var(--muted);font-size:11px}.leader-rank{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#81889A;color:#fff;font-size:12px;font-weight:800}.leader-row:first-child .leader-rank{background:#F5B700;color:#fff}.overview-body{display:grid;place-items:center;min-height:325px;padding:25px}.score-chart{position:relative;display:grid;place-items:center;width:220px;height:220px;border-radius:50%;background:conic-gradient(#3DD19B 0 calc(var(--correct)*1%),#EF6461 calc(var(--correct)*1%) calc((var(--correct) + var(--incorrect))*1%),var(--line) calc((var(--correct) + var(--incorrect))*1%) 100%)}.score-chart::before{content:"";width:125px;height:125px;border-radius:50%;background:var(--white)}.score-chart-label{position:absolute;text-align:center}.score-chart-label strong{display:block;font-size:26px}.score-chart-label small{color:var(--muted)}.chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:18px;color:var(--muted);font-size:11px}.chart-legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background:#3DD19B}.chart-legend span:nth-child(2)::before{background:#EF6461}.chart-legend span:nth-child(3)::before{background:var(--line)}.compare-table{padding:8px 14px 18px}.compare-head,.compare-row{display:grid;grid-template-columns:1.2fr .7fr .8fr;gap:8px;padding:11px 4px;border-bottom:1px solid var(--line);font-size:12px}.compare-head{color:#22B8CF;font-size:13px}.compare-row span:first-child{color:#22B8CF}.panel-note{padding:12px 14px;background:var(--surface-3);color:var(--muted);font-size:11px;line-height:1.45}.section-performance{margin-top:18px;padding:18px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08)}.section-performance h2{font-size:16px;margin:0 0 14px}.section-bars{display:grid;gap:12px}.section-row{display:grid;grid-template-columns:180px minmax(0,1fr) 100px;align-items:center;gap:12px;font-size:12.5px}.section-track{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.section-fill{height:100%;background:#536DFE}.solution-actions{display:flex;justify-content:flex-end;gap:10px;margin:18px 0}
+.exam-review{display:none;margin:18px 0;border-radius:8px;background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.08);overflow:hidden}.exam-review.is-visible{display:block}
+.exam-review-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}.exam-review-head h2{margin:0;font-size:15px}.exam-review-progress{color:var(--muted);font-size:12.5px}
+.exam-review-palette{display:flex;flex-wrap:wrap;gap:6px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--surface-2)}.exam-review-dot{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--ink);font-size:11.5px;cursor:pointer}.exam-review-dot.is-current{outline:2px solid #536DFE;outline-offset:1px}.exam-review-dot.is-correct{border-color:#16A34A;background:#DCFCE7;color:#166534}.exam-review-dot.is-incorrect{border-color:#DC2626;background:#FEE2E2;color:#991B1B}
+.exam-review-body{padding:20px 22px}.exam-review-question{font-size:15px;line-height:1.6;margin:0 0 16px}.exam-review-image{max-width:100%;max-height:280px;border-radius:8px;border:1px solid var(--line);display:block;margin:0 0 16px}
+.exam-review-options{display:grid;gap:12px;max-width:640px}.exam-review-option{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--white);font-size:13.5px;text-align:left;cursor:pointer;color:var(--ink)}.exam-review-option:hover:not(.is-disabled){border-color:#536DFE}.exam-review-option .opt-letter{display:grid;place-items:center;flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--surface-2);font-size:11.5px;font-weight:800}
+.exam-review-option.is-disabled{cursor:default}.exam-review-option.is-selected{border-color:#536DFE;background:#EEF1FF}.exam-review-option.is-correct{border-color:#16A34A;background:#F0FDF4}.exam-review-option.is-correct .opt-letter{background:#16A34A;color:#fff}.exam-review-option.is-incorrect{border-color:#DC2626;background:#FEF2F2}.exam-review-option.is-incorrect .opt-letter{background:#DC2626;color:#fff}
+.exam-review-input-row{display:flex;flex-wrap:wrap;gap:10px;max-width:640px}.exam-review-input{flex:1;min-width:220px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px}.exam-review-input.is-correct{border-color:#16A34A;background:#F0FDF4}.exam-review-input.is-incorrect{border-color:#DC2626;background:#FEF2F2}
+.exam-review-check{padding:11px 20px;border:0;border-radius:8px;background:#344A85;color:#fff;font-weight:700;font-size:13px;cursor:pointer}.exam-review-check:disabled{opacity:.5;cursor:not-allowed}
+.exam-review-feedback{display:none;margin-top:18px;padding:16px 18px;border-radius:8px;border-left:4px solid #16A34A;background:#F0FDF4}.exam-review-feedback.is-visible{display:block}.exam-review-feedback.is-wrong{border-color:#DC2626;background:#FEF2F2}.exam-review-feedback p{margin:4px 0;font-size:12.5px;color:var(--text-secondary)}.exam-review-feedback strong{font-size:13px}.exam-review-feedback-image{max-width:100%;max-height:260px;border-radius:8px;border:1px solid var(--line);display:block;margin:10px 0}
+.exam-review-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}.exam-review-nav button{padding:10px 18px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font-family:inherit;font-size:13px;cursor:pointer}.exam-review-nav button:disabled{opacity:.4;cursor:not-allowed}
+.result-nav{display:flex;justify-content:center;gap:10px;margin-top:24px}
+@media(max-width:1000px){.metric-grid{grid-template-columns:repeat(3,1fr)}.performance-grid{grid-template-columns:1fr 1fr}.performance-panel.compare{grid-column:1/-1}}@media(max-width:640px){.performance-page{padding-top:22px}.metric-grid{grid-template-columns:1fr 1fr}.performance-grid{grid-template-columns:1fr}.performance-panel.compare{grid-column:auto}.section-row{grid-template-columns:1fr}.solution-actions{justify-content:stretch}.solution-actions .btn{flex:1}.exam-review-body{padding:16px}.exam-review-nav{flex-wrap:wrap}}
 {% endblock %}
 {% block content %}
 <section class="performance-page"><div class="wrap performance-wrap"><h1 class="performance-title">Your performance report for <strong>{{ attempt.course.name }}</strong></h1>
@@ -11,6 +22,222 @@
 <section class="performance-panel"><h2>Overview</h2><div class="overview-body"><div><div class="score-chart" style="--correct:{{ chart_correct }};--incorrect:{{ chart_incorrect }}"><span class="score-chart-label"><strong>{{ percentage }}%</strong><small>Score</small></span></div><div class="chart-legend"><span>Correct</span><span>Wrong</span><span>Unattempted</span></div></div></div><p class="panel-note">Your overall performance across the selected test sections.</p></section>
 <section class="performance-panel compare"><h2>You vs Topper</h2><div class="compare-table"><div class="compare-head"><span>Name</span><span>You</span><span>{{ topper.user.name }}</span></div><div class="compare-row"><span>Score</span><span>{{ attempt.score }}/{{ attempt.total_marks }}</span><span>{{ topper.score }}/{{ topper.total_marks }}</span></div><div class="compare-row"><span>Accuracy</span><span>{{ accuracy }}%</span><span>{{ topper_metrics.accuracy }}%</span></div><div class="compare-row"><span>Correct</span><span>{{ correct_count }}</span><span>{{ topper_metrics.correct_count }}</span></div><div class="compare-row"><span>Incorrect</span><span>{{ incorrect_count }}</span><span>{{ topper_metrics.incorrect_count }}</span></div><div class="compare-row"><span>Total Time</span><span>{{ elapsed_label }}</span><span>{{ topper_metrics.elapsed_label }}</span></div></div><p class="panel-note">Calculated from each student’s best saved attempt for this test.</p></section></div>
 {% if section_results %}<section class="section-performance"><h2>Section Performance</h2><div class="section-bars">{% for row in section_results %}<div class="section-row"><strong>{{ row.name }}</strong><div class="section-track"><div class="section-fill" style="width:{{ row.percentage }}%"></div></div><span>{{ row.score }}/{{ row.total }} · {{ row.correct }}/{{ row.questions }} correct</span></div>{% endfor %}</div></section>{% endif %}
-<div class="solution-actions"><button class="btn btn-ghost" id="toggleSolutions" type="button">View Solutions</button></div><div class="solution-list" id="solutionList">{% for answer in answers %}<article class="solution-card {% if answer.is_correct %}correct{% endif %}"><h3>Q{{ forloop.counter }}. {{ answer.question_text_snapshot }}</h3>{% if answer.question.question_image %}<img loading="lazy" decoding="async" class="solution-card-image" src="{{ answer.question.question_image.url }}" alt="">{% endif %}<p>Your answer: {{ answer.submitted_answer|default:"Not answered" }}</p><p>Correct answer: {{ answer.correct_answer_snapshot }}</p><p>{% if answer.is_correct %}Correct · +{{ answer.marks_awarded }}{% elif answer.submitted_answer %}Incorrect · {{ answer.marks_awarded }} marks{% else %}Not attempted{% endif %}</p>{% if answer.solution_snapshot %}<p>Explanation: {{ answer.solution_snapshot|linebreaksbr }}</p>{% endif %}</article>{% endfor %}</div><div class="result-nav"><a class="btn btn-ghost" href="{% url 'account_results' %}">My Results</a><a class="btn btn-primary" href="{% url 'index' %}#test-series">Back to Test Series</a></div></div></section>
+<div class="solution-actions"><button class="btn btn-ghost" id="toggleSolutions" type="button">View Solutions</button></div>
+<div class="exam-review" id="examReview">
+  <div class="exam-review-head"><h2>Question Review</h2><span class="exam-review-progress" id="examReviewProgress"></span></div>
+  <div class="exam-review-palette" id="examReviewPalette"></div>
+  <div class="exam-review-body" id="examReviewBody"></div>
+  <div class="exam-review-nav"><button type="button" id="examReviewPrev">← Previous</button><button type="button" id="examReviewNext">Next →</button></div>
+</div>
+{{ review_questions|json_script:"examReviewData" }}
+<div class="result-nav"><a class="btn btn-ghost" href="{% url 'account_results' %}">My Results</a><a class="btn btn-primary" href="{% url 'index' %}#test-series">Back to Test Series</a></div></div></section>
 {% endblock %}
-{% block extra_script %}(function(){var button=document.getElementById('toggleSolutions'),list=document.getElementById('solutionList');if(!button||!list)return;button.addEventListener('click',function(){var visible=list.classList.toggle('is-visible');button.textContent=visible?'Hide Solutions':'View Solutions';});})();{% endblock %}
+{% block extra_script %}
+(function(){
+  var toggleBtn=document.getElementById('toggleSolutions'),
+      panel=document.getElementById('examReview'),
+      dataEl=document.getElementById('examReviewData');
+  if(!toggleBtn||!panel||!dataEl)return;
+  var questions=JSON.parse(dataEl.textContent);
+  var body=document.getElementById('examReviewBody'),
+      progress=document.getElementById('examReviewProgress'),
+      palette=document.getElementById('examReviewPalette'),
+      prevBtn=document.getElementById('examReviewPrev'),
+      nextBtn=document.getElementById('examReviewNext');
+  var current=0, revealed=questions.map(function(){return false;}), gotRight=questions.map(function(){return null;});
+
+  function normalize(v){return (v||'').toString().trim().toLowerCase();}
+  function correctLetters(q){return normalize(q.correct_answer).split(',').map(function(s){return s.trim();}).filter(Boolean);}
+  function isLetterCorrect(q, letter){return correctLetters(q).indexOf(normalize(letter))!==-1;}
+
+  function reveal(q, index, picked){
+    revealed[index]=true;
+    var isCorrect = normalize(picked) === normalize(q.correct_answer);
+    gotRight[index]=isCorrect;
+    return isCorrect;
+  }
+
+  function revealMultiple(q, index, pickedLetters){
+    revealed[index]=true;
+    var picked=pickedLetters.map(normalize).sort();
+    var correct=correctLetters(q).sort();
+    var isCorrect = picked.length===correct.length && picked.every(function(v,i){return v===correct[i];});
+    gotRight[index]=isCorrect;
+    return isCorrect;
+  }
+
+  function renderPalette(){
+    palette.innerHTML='';
+    questions.forEach(function(q,i){
+      var dot=document.createElement('button');
+      dot.type='button';
+      dot.className='exam-review-dot'+(i===current?' is-current':'')+(revealed[i]?(gotRight[i]?' is-correct':' is-incorrect'):'');
+      dot.textContent=q.number;
+      dot.addEventListener('click',function(){current=i;render();});
+      palette.appendChild(dot);
+    });
+  }
+
+  function feedbackBlock(q, isCorrect){
+    var wrap=document.createElement('div');
+    wrap.className='exam-review-feedback is-visible'+(isCorrect?'':' is-wrong');
+    var head=document.createElement('strong');
+    head.textContent=isCorrect ? 'Correct! +'+q.marks_awarded+' marks' : 'Incorrect';
+    wrap.appendChild(head);
+    if(!isCorrect){
+      var correctLine=document.createElement('p');
+      correctLine.textContent='Correct answer: '+q.correct_answer;
+      wrap.appendChild(correctLine);
+    }
+    if(q.image_url){
+      var img=document.createElement('img');
+      img.className='exam-review-feedback-image';
+      img.loading='lazy';
+      img.src=q.image_url;
+      wrap.appendChild(img);
+    }
+    if(q.solution){
+      var sol=document.createElement('p');
+      sol.innerHTML='<strong>Step-by-step solution:</strong><br>'+q.solution.replace(/\n/g,'<br>');
+      wrap.appendChild(sol);
+    }
+    return wrap;
+  }
+
+  function renderChoiceQuestion(q, index){
+    var optionsWrap=document.createElement('div');
+    optionsWrap.className='exam-review-options';
+    var alreadyRevealed=revealed[index];
+    var isMultiple = q.type==='multiple';
+    var selected=[];
+
+    function finish(isCorrect){
+      Array.from(optionsWrap.children).forEach(function(child, i){
+        child.classList.add('is-disabled');
+        var opt=q.options[i];
+        var wasPicked = selected.indexOf(opt.letter)!==-1;
+        if(isLetterCorrect(q, opt.letter)) child.classList.add('is-correct');
+        else if(wasPicked) child.classList.add('is-incorrect');
+      });
+      body.appendChild(feedbackBlock(q, isCorrect));
+      renderPalette();
+    }
+
+    q.options.forEach(function(opt){
+      var btn=document.createElement('button');
+      btn.type='button';
+      btn.className='exam-review-option';
+      btn.innerHTML='<span class="opt-letter">'+opt.letter+'</span><span>'+opt.text+'</span>';
+      if(alreadyRevealed){
+        btn.classList.add('is-disabled');
+        var wasPicked = (q.submitted_answer||'').split(',').map(normalize).indexOf(normalize(opt.letter))!==-1;
+        if(isLetterCorrect(q, opt.letter)) btn.classList.add('is-correct');
+        else if(!gotRight[index] && wasPicked) btn.classList.add('is-incorrect');
+      } else if(isMultiple){
+        btn.addEventListener('click',function(){
+          var i=selected.indexOf(opt.letter);
+          if(i===-1){selected.push(opt.letter);btn.classList.add('is-selected');}
+          else{selected.splice(i,1);btn.classList.remove('is-selected');}
+        });
+      } else {
+        btn.addEventListener('click',function(){
+          if(revealed[index])return;
+          selected=[opt.letter];
+          var isCorrect=reveal(q, index, opt.letter);
+          finish(isCorrect);
+        });
+      }
+      optionsWrap.appendChild(btn);
+    });
+
+    body.appendChild(optionsWrap);
+
+    if(isMultiple && !alreadyRevealed){
+      var checkBtn=document.createElement('button');
+      checkBtn.type='button';
+      checkBtn.className='exam-review-check';
+      checkBtn.style.marginTop='14px';
+      checkBtn.textContent='Check Answer';
+      checkBtn.addEventListener('click',function(){
+        if(!selected.length||revealed[index])return;
+        var isCorrect=revealMultiple(q, index, selected);
+        checkBtn.remove();
+        finish(isCorrect);
+      });
+      body.appendChild(checkBtn);
+    }
+
+    if(alreadyRevealed){
+      body.appendChild(feedbackBlock(q, gotRight[index]));
+    }
+  }
+
+  function renderTextQuestion(q, index){
+    var row=document.createElement('div');
+    row.className='exam-review-input-row';
+    var input=document.createElement('input');
+    input.type='text';
+    input.className='exam-review-input';
+    input.placeholder='Type your answer';
+    var checkBtn=document.createElement('button');
+    checkBtn.type='button';
+    checkBtn.className='exam-review-check';
+    checkBtn.textContent='Check Answer';
+    if(revealed[index]){
+      input.value=q.submitted_answer||'';
+      input.disabled=true;
+      checkBtn.disabled=true;
+      input.classList.add(gotRight[index]?'is-correct':'is-incorrect');
+    }
+    checkBtn.addEventListener('click',function(){
+      if(revealed[index]||!input.value.trim())return;
+      var isCorrect=reveal(q, index, input.value);
+      input.disabled=true;
+      checkBtn.disabled=true;
+      input.classList.add(isCorrect?'is-correct':'is-incorrect');
+      body.appendChild(feedbackBlock(q, isCorrect));
+      renderPalette();
+    });
+    row.appendChild(input);
+    row.appendChild(checkBtn);
+    body.appendChild(row);
+    if(revealed[index]){
+      body.appendChild(feedbackBlock(q, gotRight[index]));
+    }
+  }
+
+  function render(){
+    var q=questions[current];
+    body.innerHTML='';
+    var heading=document.createElement('p');
+    heading.className='exam-review-question';
+    heading.textContent='Q'+q.number+'. '+q.text;
+    body.appendChild(heading);
+    if(q.image_url){
+      var img=document.createElement('img');
+      img.className='exam-review-image';
+      img.loading='lazy';
+      img.src=q.image_url;
+      body.appendChild(img);
+    }
+    if(q.type==='numeric'||q.type==='fill_blank'){
+      renderTextQuestion(q, current);
+    }else{
+      renderChoiceQuestion(q, current);
+    }
+    progress.textContent='Question '+(current+1)+' of '+questions.length;
+    prevBtn.disabled = current===0;
+    nextBtn.disabled = current===questions.length-1;
+    renderPalette();
+  }
+
+  prevBtn.addEventListener('click', function(){ if(current>0){current--;render();} });
+  nextBtn.addEventListener('click', function(){ if(current<questions.length-1){current++;render();} });
+
+  toggleBtn.addEventListener('click', function(){
+    var visible=panel.classList.toggle('is-visible');
+    toggleBtn.textContent = visible ? 'Hide Solutions' : 'View Solutions';
+    if(visible && !body.childElementCount) render();
+  });
+})();
+{% endblock %}

@@ -181,8 +181,13 @@ class BannerSlide(models.Model):
     button_text = models.CharField(max_length=50, blank=True)
     button_link = models.CharField(max_length=300, blank=True, help_text='e.g. #popular-courses or a full https:// URL')
     link = models.CharField(max_length=300, blank=True, help_text='Optional. Makes the whole slide clickable — opens this link when a student taps anywhere on it (outside the button). e.g. #popular-courses or a full https:// URL')
-    image = models.ImageField(upload_to='banner/', blank=True, null=True, help_text='Recommended size: 1600×600px.')
-    image_url = models.URLField(blank=True, help_text='Used only if no image is uploaded above')
+    image = models.ImageField(upload_to='banner/', blank=True, null=True, help_text='Desktop banner. Recommended size: 1600×600px.')
+    image_url = models.URLField(blank=True, help_text='Used only if no desktop image is uploaded above')
+    mobile_image = models.ImageField(
+        upload_to='banner/mobile/', blank=True, null=True,
+        help_text='Optional. Shown instead of the desktop banner on phone-width screens. Recommended size: 800×900px (taller/narrower crop). Leave blank to reuse the desktop banner.',
+    )
+    mobile_image_url = models.URLField(blank=True, help_text='Used only if no mobile image is uploaded above')
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -193,6 +198,12 @@ class BannerSlide(models.Model):
         if self.image and self.image.storage.exists(self.image.name):
             return self.image.url
         return self.image_url
+
+    @cached_property
+    def display_mobile_image_url(self):
+        if self.mobile_image and self.mobile_image.storage.exists(self.mobile_image.name):
+            return self.mobile_image.url
+        return self.mobile_image_url or self.display_image_url
 
     def __str__(self):
         return self.title
@@ -430,13 +441,26 @@ class HeroSection(models.Model):
         return bool(self.visual_video_url) and self.visual_video_url.lower().split('?')[0].endswith(('.mp4', '.webm', '.ogg'))
 
     @property
+    def visual_youtube_id(self):
+        url = self.visual_video_url
+        if not url:
+            return ''
+        match = re.search(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([\w-]{6,})', url)
+        return match.group(1) if match else ''
+
+    @property
+    def visual_youtube_thumbnail_url(self):
+        youtube_id = self.visual_youtube_id
+        return f'https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg' if youtube_id else ''
+
+    @property
     def visual_video_embed_url(self):
         url = self.visual_video_url
         if not url:
             return ''
-        youtube_match = re.search(r'(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([\w-]{6,})', url)
-        if youtube_match:
-            return f'https://www.youtube.com/embed/{youtube_match.group(1)}'
+        youtube_id = self.visual_youtube_id
+        if youtube_id:
+            return f'https://www.youtube.com/embed/{youtube_id}?enablejsapi=1'
         vimeo_match = re.search(r'vimeo\.com/(\d+)', url)
         if vimeo_match:
             return f'https://player.vimeo.com/video/{vimeo_match.group(1)}'
@@ -770,6 +794,23 @@ class Course(models.Model):
         (VALIDITY_MONTHS, 'Months'),
     ]
 
+    STATUS_PUBLISHED = 'published'
+    STATUS_IN_REVIEW = 'in_review'
+    STATUS_DRAFTING = 'drafting'
+    STATUS_ARCHIVED = 'archived'
+    STATUS_CHOICES = [
+        (STATUS_PUBLISHED, 'Published'),
+        (STATUS_IN_REVIEW, 'In Review'),
+        (STATUS_DRAFTING, 'Question Drafting'),
+        (STATUS_ARCHIVED, 'Archived'),
+    ]
+
+    LANGUAGE_CHOICES = [
+        ('en', 'English'),
+        ('hi', 'Hindi'),
+        ('kn', 'Kannada'),
+    ]
+
     course_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses',
@@ -806,9 +847,37 @@ class Course(models.Model):
         default=False,
         help_text='Used for Test Series. Randomize the question order separately for each student\'s attempt.',
     )
+    languages_supported = models.JSONField(
+        default=list, blank=True,
+        help_text='Used for Test Series. Questions have to be uploaded in the languages you select here. Leave empty to allow every supported language.',
+    )
+    disable_partial_marking = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Disable partial marking for the test. Marks will be rewarded only if the entire answer is correct, with no marks for partially correct answers.',
+    )
+    enable_sectional_timing = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Enable fixed timing for each of the test sections. Student will not be able to change section before the allotted duration is over for that section.',
+    )
+    enable_optional_section = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Enable optional sectional feature for the test. You will be able to mark some of the sections as optional, and student can choose among the optional section(s) they want to attempt. Sections not marked "optional" will be compulsory to attempt.',
+    )
+    enable_optional_questions_in_section = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Enable optional questions in section feature for the test. You will be able to add sections with optional questions in them, and the student can choose among the optional question(s) they want to attempt in that particular section.',
+    )
+    all_questions_mandatory = models.BooleanField(
+        default=False,
+        help_text='Used for Test Series. Prevent the user from skipping questions. Student will not be able to skip questions.',
+    )
     author = models.CharField(max_length=150, blank=True, help_text='Used for E-Library only.')
     pages = models.PositiveIntegerField(null=True, blank=True, help_text='Used for E-Library only — number of pages.')
     order = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_PUBLISHED,
+        help_text='Workflow state. Only "Published" tests are shown publicly — the others stay hidden while the item is a draft, under review, or archived.',
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -818,6 +887,13 @@ class Course(models.Model):
     @property
     def is_free(self):
         return self.force_free or not self.current_price or self.current_price <= 0
+
+    @property
+    def duration_label(self):
+        if not self.duration_minutes:
+            return 'No limit'
+        hours, minutes = divmod(self.duration_minutes, 60)
+        return f'{hours:02d}h {minutes:02d}m'
 
     @property
     def effective_categories(self):
@@ -1020,8 +1096,32 @@ class TestSection(models.Model):
         limit_choices_to={'course_type': Course.TEST_SERIES},
     )
     name = models.CharField(max_length=120, help_text='e.g. Section A — Mathematics')
+    translations = models.JSONField(
+        default=dict, blank=True,
+        help_text='Optional per-language section name, e.g. {"hi": {"name": "..."}, "kn": {"name": "..."}}. Missing languages fall back to the English name above.',
+    )
     is_optional = models.BooleanField(default=False, help_text='Students may choose whether to attempt this section.')
-    negative_marks = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Marks deducted for each incorrect answer in this section.')
+    negative_marks = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Default marks deducted for a wrong answer in this section — used when a question does not set its own negative marks.')
+    positive_marks_options = models.JSONField(
+        default=list, blank=True,
+        help_text='Standard positive-mark values for this section, e.g. [1, 2, 4]. Shown as quick picks in the Question Edit/Insert interface.',
+    )
+    negative_marks_options = models.JSONField(
+        default=list, blank=True,
+        help_text='Standard negative-mark values for this section, e.g. [0.25, 0.5, 1]. Shown as quick picks in the Question Edit/Insert interface.',
+    )
+    disable_shuffling = models.BooleanField(
+        default=False,
+        help_text='Optional. Keep this section\'s questions in a fixed order even when the test has "Shuffle questions" enabled.',
+    )
+    duration_minutes = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Optional time limit for this section, in minutes. Counted from the moment the student opens the section — once it runs out, the section locks and the test moves on to the next one. Leave blank for no per-section limit.',
+    )
+    max_optional_questions = models.PositiveIntegerField(
+        default=0, blank=True,
+        help_text='Used when "Enable Optional Questions in Section" is on for the test. Maximum optional questions in this section that count towards the score. Use 0 to disable optional questions for this section.',
+    )
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -1065,6 +1165,14 @@ class Question(models.Model):
     )
     solution = models.TextField(blank=True, help_text='Optional explanation shown to students in "View Solutions" after they submit the test.')
     marks = models.PositiveIntegerField(default=1)
+    negative_marks = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Marks deducted for a wrong answer to this question. Leave blank to use the section\'s default negative marks.',
+    )
+    is_optional = models.BooleanField(
+        default=False,
+        help_text='Used when the section has "Maximum optional questions" set. Student can choose to attempt this among the optional questions in this section.',
+    )
     order = models.PositiveIntegerField(default=0)
     translations = models.JSONField(
         default=dict, blank=True,

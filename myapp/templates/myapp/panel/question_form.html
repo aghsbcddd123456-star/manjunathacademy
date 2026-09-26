@@ -88,9 +88,18 @@
     </label>
 
     <div class="panel-form-row question-form-row">
-      <label><span class="panel-label-text">Marks</span>{{ form.marks }}</label>
-      <label><span class="panel-label-text">Order</span>{{ form.order }}</label>
+      <label><span class="panel-label-text">Marks</span>{{ form.marks }}
+        <datalist id="positiveMarksOptions"></datalist>
+      </label>
+      <label><span class="panel-label-text">Negative marks</span>{{ form.negative_marks }}
+        <p class="custom-help">Leave blank to use the section's default negative marks.</p>
+        <datalist id="negativeMarksOptions"></datalist>
+      </label>
     </div>
+
+    <label><span class="panel-label-text">Order</span>{{ form.order }}</label>
+
+    <label class="panel-form-check">{{ form.is_optional }} Optional question (counts toward the section's "Max optional questions" cap)</label>
 
     <p class="custom-help">Translations are optional. A student who switches the site to Hindi or Kannada sees the translated text below; anything left blank falls back to the English text above.</p>
 
@@ -147,6 +156,31 @@
     optionFields.classList.toggle('is-visible', needsOptions);
   }
   typeSelect.addEventListener('change', sync);
+  sync();
+})();
+
+(function () {
+  var sectionSelect = document.getElementById('id_section');
+  var positiveList = document.getElementById('positiveMarksOptions');
+  var negativeList = document.getElementById('negativeMarksOptions');
+  if (!sectionSelect || !positiveList || !negativeList) return;
+  var optionsBySection = {{ section_marks_options_json|default:'{}'|safe }};
+
+  function fillDatalist(list, values) {
+    list.innerHTML = '';
+    (values || []).forEach(function (value) {
+      var opt = document.createElement('option');
+      opt.value = value;
+      list.appendChild(opt);
+    });
+  }
+
+  function sync() {
+    var options = optionsBySection[sectionSelect.value] || {};
+    fillDatalist(positiveList, options.positive);
+    fillDatalist(negativeList, options.negative);
+  }
+  sectionSelect.addEventListener('change', sync);
   sync();
 })();
 {% endblock %}

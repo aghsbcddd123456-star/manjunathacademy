@@ -19,19 +19,32 @@
 /* ---------- live slide preview ---------- */
 .hp-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
 .hp-label::before{content:"";width:7px;height:7px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+/* Mirrors .promo-card/.promo-slide in base.css exactly, so this preview matches
+   the live homepage banner instead of an approximation with different proportions. */
 .bn-mock{
-  position:relative;overflow:hidden;border-radius:16px 16px 16px 60px;min-height:220px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  text-align:center;padding:26px 30px;background-color:#FCEBE0;background-size:cover;background-position:center;
+  position:relative;overflow:hidden;border-radius:32px 32px 32px 190px;min-height:330px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;
+  text-align:center;padding:44px 60px 48px;background-color:#FCEBE0;background-size:cover;background-position:center;
   box-shadow:0 8px 22px rgba(16,16,18,.12);margin-bottom:24px;
 }
-.bn-mock::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.93) 0%,rgba(255,255,255,.78) 45%,rgba(255,255,255,.35) 100%)}
+.bn-mock::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.93) 0%,rgba(255,255,255,.78) 45%,rgba(255,255,255,.4) 100%)}
 .bn-mock.no-text::before{display:none}
-.bn-mock-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.bn-mock-kicker{margin:0;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}
-.bn-mock-title{font-family:"Archivo",sans-serif;font-weight:800;font-size:clamp(18px,3vw,26px);margin:0;color:var(--ink);max-width:18ch}
-.bn-mock-sub{margin:0;color:var(--muted);font-size:12.5px;max-width:44ch}
-.bn-mock-btn{display:inline-flex;margin-top:6px;padding:8px 16px;border-radius:999px;background:var(--orange);color:#fff;font-size:12px;font-weight:700}
+.bn-mock-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bn-mock-kicker{margin:0;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--orange)}
+.bn-mock-title{font-family:"Anton",Impact,sans-serif;font-weight:400;font-size:clamp(22px,3.6vw,38px);letter-spacing:.005em;line-height:1.08;margin:0;color:var(--ink);max-width:18ch}
+.bn-mock-sub{margin:0;color:var(--muted);font-size:15px;max-width:52ch}
+.bn-mock-btn{display:inline-flex;margin-top:2px;padding:8px 16px;border-radius:999px;background:var(--orange);color:#fff;font-size:12px;font-weight:700}
+@media (max-width:620px){.bn-mock{border-radius:24px 24px 24px 110px;min-height:320px;padding:26px 22px 46px}}
+
+.bn-preview-grid{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;margin-bottom:8px}
+.bn-preview-col-label{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 8px}
+/* Mobile preview reuses the same shape rules the site applies at max-width:620px,
+   scaled to a fixed phone-ish box instead of relying on an actual narrow viewport. */
+.bn-mock-mobile{
+  border-radius:24px 24px 24px 110px;min-height:320px;padding:26px 22px 46px;gap:8px;margin-bottom:0;
+}
+.bn-mock-mobile .bn-mock-title{font-size:clamp(13px,4.6vw,20px);white-space:nowrap;max-width:100%}
+@media (max-width:900px){.bn-preview-grid{grid-template-columns:1fr}.bn-mock-mobile{max-width:300px}}
 {% endblock %}
 
 {% block content %}
@@ -45,12 +58,28 @@
   </div>
 
   <p class="hp-label">Live preview — updates as you type</p>
-  <div class="bn-mock" id="pvBannerMock"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}>
-    <div class="bn-mock-inner">
-      <p class="bn-mock-kicker" id="pvKicker">{{ slide.kicker }}</p>
-      <h4 class="bn-mock-title" id="pvTitle">{{ slide.title }}</h4>
-      <p class="bn-mock-sub" id="pvSubtitle">{{ slide.subtitle }}</p>
-      <span class="bn-mock-btn" id="pvButtonText">{{ slide.button_text }}</span>
+  <div class="bn-preview-grid">
+    <div>
+      <p class="bn-preview-col-label">Desktop</p>
+      <div class="bn-mock" id="pvBannerMock"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}>
+        <div class="bn-mock-inner">
+          <p class="bn-mock-kicker" id="pvKicker">{{ slide.kicker }}</p>
+          <h4 class="bn-mock-title" id="pvTitle">{{ slide.title }}</h4>
+          <p class="bn-mock-sub" id="pvSubtitle">{{ slide.subtitle }}</p>
+          <span class="bn-mock-btn" id="pvButtonText">{{ slide.button_text }}</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="bn-preview-col-label">Mobile</p>
+      <div class="bn-mock bn-mock-mobile" id="pvBannerMockMobile"{% if slide.display_mobile_image_url %} style="background-image:url('{{ slide.display_mobile_image_url }}')"{% endif %}>
+        <div class="bn-mock-inner">
+          <p class="bn-mock-kicker" id="pvKickerMobile">{{ slide.kicker }}</p>
+          <h4 class="bn-mock-title" id="pvTitleMobile">{{ slide.title }}</h4>
+          <p class="bn-mock-sub" id="pvSubtitleMobile">{{ slide.subtitle }}</p>
+          <span class="bn-mock-btn" id="pvButtonTextMobile">{{ slide.button_text }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -87,13 +116,13 @@
       {% if form.link.errors %}<ul class="panel-errors">{% for e in form.link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
-    <label><span class="panel-label-text">Upload image</span>
+    <label><span class="panel-label-text">Desktop banner — upload image</span>
       {{ form.image }}
       <p class="custom-help">{{ form.image.help_text }}</p>
       {% if form.image.errors %}<ul class="panel-errors">{% for e in form.image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </label>
 
-    <label><span class="panel-label-text">Or image URL</span>
+    <label><span class="panel-label-text">Or desktop image URL</span>
       {{ form.image_url }}
       <p class="custom-help">{{ form.image_url.help_text }}</p>
       {% if form.image_url.errors %}<ul class="panel-errors">{% for e in form.image_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
@@ -101,8 +130,27 @@
 
     {% if slide.display_image_url %}
       <div class="banner-preview">
-        <img loading="lazy" decoding="async" src="{{ slide.display_image_url }}" alt="Current slide image">
-        <span class="banner-preview-label">Current image</span>
+        <img loading="lazy" decoding="async" src="{{ slide.display_image_url }}" alt="Current desktop image">
+        <span class="banner-preview-label">Current desktop image</span>
+      </div>
+    {% endif %}
+
+    <label><span class="panel-label-text">Mobile banner — upload image</span>
+      {{ form.mobile_image }}
+      <p class="custom-help">{{ form.mobile_image.help_text }}</p>
+      {% if form.mobile_image.errors %}<ul class="panel-errors">{% for e in form.mobile_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
+    <label><span class="panel-label-text">Or mobile image URL</span>
+      {{ form.mobile_image_url }}
+      <p class="custom-help">{{ form.mobile_image_url.help_text }}</p>
+      {% if form.mobile_image_url.errors %}<ul class="panel-errors">{% for e in form.mobile_image_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </label>
+
+    {% if slide.mobile_image or slide.mobile_image_url %}
+      <div class="banner-preview">
+        <img loading="lazy" decoding="async" src="{{ slide.display_mobile_image_url }}" alt="Current mobile image">
+        <span class="banner-preview-label">Current mobile image</span>
       </div>
     {% endif %}
 
@@ -130,34 +178,40 @@
 
 {% block extra_script %}
 (function () {
-  function bindText(id, targetId, hideIfEmpty) {
+  function bindText(id, targetIds, hideIfEmpty) {
     var el = document.getElementById(id);
-    var target = document.getElementById(targetId);
-    if (!el || !target) return;
-    el.addEventListener('input', function () {
-      target.textContent = el.value;
-      if (hideIfEmpty) target.style.display = el.value.trim() ? '' : 'none';
-    });
-    if (hideIfEmpty) target.style.display = el.value.trim() ? '' : 'none';
+    var targets = targetIds.map(function (t) { return document.getElementById(t); }).filter(Boolean);
+    if (!el || !targets.length) return;
+    function sync() {
+      targets.forEach(function (target) {
+        target.textContent = el.value;
+        if (hideIfEmpty) target.style.display = el.value.trim() ? '' : 'none';
+      });
+    }
+    el.addEventListener('input', sync);
+    sync();
   }
 
-  bindText('id_kicker', 'pvKicker', true);
-  bindText('id_title', 'pvTitle', true);
-  bindText('id_subtitle', 'pvSubtitle', true);
-  bindText('id_button_text', 'pvButtonText', true);
+  bindText('id_kicker', ['pvKicker', 'pvKickerMobile'], true);
+  bindText('id_title', ['pvTitle', 'pvTitleMobile'], true);
+  bindText('id_subtitle', ['pvSubtitle', 'pvSubtitleMobile'], true);
+  bindText('id_button_text', ['pvButtonText', 'pvButtonTextMobile'], true);
 
   var mock = document.getElementById('pvBannerMock');
+  var mockMobile = document.getElementById('pvBannerMockMobile');
   var fileInput = document.getElementById('id_image');
   var urlInput = document.getElementById('id_image_url');
+  var mobileFileInput = document.getElementById('id_mobile_image');
+  var mobileUrlInput = document.getElementById('id_mobile_image_url');
 
   function updateScrim() {
-    if (!mock) return;
     var textIds = ['id_kicker', 'id_title', 'id_subtitle', 'id_button_text'];
     var hasText = textIds.some(function (id) {
       var el = document.getElementById(id);
       return el && el.value.trim();
     });
-    mock.classList.toggle('no-text', !hasText);
+    if (mock) mock.classList.toggle('no-text', !hasText);
+    if (mockMobile) mockMobile.classList.toggle('no-text', !hasText);
   }
   ['id_kicker', 'id_title', 'id_subtitle', 'id_button_text'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -165,24 +219,52 @@
   });
   updateScrim();
 
-  function applyUrl(url) {
+  var desktopDataUrl = '', mobileDataUrl = '';
+
+  function applyDesktop(url) {
+    desktopDataUrl = url || '';
     if (mock) mock.style.backgroundImage = url ? "url('" + url + "')" : 'none';
+    applyMobile(mobileDataUrl || (mobileUrlInput && mobileUrlInput.value) || '');
+  }
+
+  function applyMobile(url) {
+    mobileDataUrl = url || '';
+    var fallback = desktopDataUrl || (urlInput && urlInput.value) || '';
+    var finalUrl = url || fallback;
+    if (mockMobile) mockMobile.style.backgroundImage = finalUrl ? "url('" + finalUrl + "')" : 'none';
   }
 
   if (fileInput) {
     fileInput.addEventListener('change', function () {
       if (fileInput.files && fileInput.files[0]) {
         var reader = new FileReader();
-        reader.onload = function (e) { applyUrl(e.target.result); };
+        reader.onload = function (e) { applyDesktop(e.target.result); };
         reader.readAsDataURL(fileInput.files[0]);
       } else if (urlInput) {
-        applyUrl(urlInput.value);
+        applyDesktop(urlInput.value);
       }
     });
   }
   if (urlInput) {
     urlInput.addEventListener('input', function () {
-      if (!(fileInput && fileInput.files && fileInput.files[0])) applyUrl(urlInput.value);
+      if (!(fileInput && fileInput.files && fileInput.files[0])) applyDesktop(urlInput.value);
+    });
+  }
+
+  if (mobileFileInput) {
+    mobileFileInput.addEventListener('change', function () {
+      if (mobileFileInput.files && mobileFileInput.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function (e) { applyMobile(e.target.result); };
+        reader.readAsDataURL(mobileFileInput.files[0]);
+      } else if (mobileUrlInput) {
+        applyMobile(mobileUrlInput.value);
+      }
+    });
+  }
+  if (mobileUrlInput) {
+    mobileUrlInput.addEventListener('input', function () {
+      if (!(mobileFileInput && mobileFileInput.files && mobileFileInput.files[0])) applyMobile(mobileUrlInput.value);
     });
   }
 })();

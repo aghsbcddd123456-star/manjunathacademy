@@ -355,7 +355,10 @@ class NavbarCustomizationForm(forms.ModelForm):
 class BannerSlideForm(forms.ModelForm):
     class Meta:
         model = BannerSlide
-        fields = ('kicker', 'title', 'subtitle', 'button_text', 'button_link', 'link', 'image', 'image_url', 'order', 'is_active')
+        fields = (
+            'kicker', 'title', 'subtitle', 'button_text', 'button_link', 'link',
+            'image', 'image_url', 'mobile_image', 'mobile_image_url', 'order', 'is_active',
+        )
         widgets = {
             'kicker': forms.TextInput(attrs={'placeholder': 'e.g. Admissions open'}),
             'title': forms.TextInput(attrs={'placeholder': 'e.g. New Batch Starting Soon'}),
@@ -364,12 +367,16 @@ class BannerSlideForm(forms.ModelForm):
             'button_link': forms.TextInput(attrs={'placeholder': 'e.g. #popular-courses'}),
             'link': forms.TextInput(attrs={'placeholder': 'e.g. #popular-courses or https://...'}),
             'image_url': forms.URLInput(attrs={'placeholder': 'https://example.com/photo.jpg'}),
+            'mobile_image_url': forms.URLInput(attrs={'placeholder': 'https://example.com/photo-mobile.jpg'}),
             'order': forms.NumberInput(attrs={'min': 0}),
             'image': forms.FileInput(),
+            'mobile_image': forms.FileInput(),
         }
         help_texts = {
             'image': 'Recommended size: 1400×500px (wide photo). JPG or PNG, under 2MB.',
-            'image_url': 'Used only if no image is uploaded above.',
+            'image_url': 'Used only if no desktop image is uploaded above.',
+            'mobile_image': 'Optional. Shown instead of the desktop banner on phone-width screens. Recommended size: 800×900px. Leave blank to reuse the desktop banner.',
+            'mobile_image_url': 'Used only if no mobile image is uploaded above.',
             'order': 'Lower numbers show first.',
         }
 
@@ -686,6 +693,12 @@ class CourseForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
         help_text='Tag this test with one, several, or every relevant exam/subject. Students will see it under each one you pick.',
     )
+    languages_supported = forms.MultipleChoiceField(
+        choices=Course.LANGUAGE_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text='Questions have to be uploaded in the languages you will select here.',
+    )
 
     class Meta:
         model = Course
@@ -693,8 +706,10 @@ class CourseForm(forms.ModelForm):
             'category', 'categories', 'name', 'test_type', 'original_price', 'current_price', 'force_free',
             'enable_validity', 'validity_value', 'validity_unit', 'enable_folders',
             'about', 'highlights', 'thumbnail', 'pdf_file', 'video_file',
-            'duration_minutes', 'max_optional_sections', 'shuffle_questions', 'author', 'pages',
-            'order', 'is_active',
+            'duration_minutes', 'languages_supported', 'max_optional_sections', 'shuffle_questions',
+            'disable_partial_marking', 'enable_sectional_timing', 'enable_optional_section',
+            'enable_optional_questions_in_section', 'all_questions_mandatory',
+            'author', 'pages', 'order', 'is_active',
         )
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. SSC CGL Complete Test Series'}),
@@ -729,6 +744,12 @@ class CourseForm(forms.ModelForm):
         if course_type != Course.TEST_SERIES:
             del self.fields['max_optional_sections']
             del self.fields['shuffle_questions']
+            del self.fields['languages_supported']
+            del self.fields['disable_partial_marking']
+            del self.fields['enable_sectional_timing']
+            del self.fields['enable_optional_section']
+            del self.fields['enable_optional_questions_in_section']
+            del self.fields['all_questions_mandatory']
         if course_type == Course.TEST_SERIES:
             del self.fields['category']
             self.fields['categories'].queryset = hierarchical_category_queryset()
@@ -779,15 +800,84 @@ CourseDocumentFormSet = inlineformset_factory(
 )
 
 
+class TagListField(forms.CharField):
+    """A comma-separated list of numbers, edited in the UI as chips added by pressing Enter."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('required', False)
+        kwargs.setdefault('widget', forms.TextInput(attrs={'class': 'tag-input', 'type': 'hidden'}))
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, (list, tuple)):
+            return ', '.join(str(v) for v in value)
+        return value
+
+    def clean(self, value):
+        value = super().clean(value)
+        result = []
+        for part in (value or '').replace('\n', ',').split(','):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                num = float(part)
+            except ValueError:
+                continue
+            result.append(int(num) if num == int(num) else num)
+        return result
+
+
 class TestSectionForm(forms.ModelForm):
+    TRANSLATION_LANGUAGES = (('hi', 'Hindi'), ('kn', 'Kannada'))
+
+    positive_marks_options = TagListField(
+        label='Positive Marks',
+        help_text='Marks for correct answer. You can enter multiple values here. Multiple marks can be created by entering the marks and then pressing enter key. Positive marks provided here will later be shown in the Question Edit/Insert interface.',
+    )
+    negative_marks_options = TagListField(
+        label='Negative Marks',
+        help_text='Marks deducted for wrong answer. You can enter multiple values here. Multiple marks can be created by entering the marks and then pressing enter key. Negative marks provided here will later be shown in the Question Edit/Insert interface.',
+    )
+
     class Meta:
         model = TestSection
-        fields = ('name', 'is_optional', 'negative_marks', 'order')
+        fields = (
+            'name', 'is_optional', 'positive_marks_options', 'negative_marks_options', 'disable_shuffling',
+            'duration_minutes', 'max_optional_questions', 'order',
+        )
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'e.g. Section A — Mathematics'}),
-            'negative_marks': forms.NumberInput(attrs={'min': 0, 'step': '0.01', 'placeholder': '0'}),
+            'name': forms.TextInput(attrs={'placeholder': 'Enter name'}),
+            'duration_minutes': forms.NumberInput(attrs={'min': 1, 'placeholder': 'No limit'}),
+            'max_optional_questions': forms.NumberInput(attrs={'min': 0, 'placeholder': '0'}),
             'order': forms.NumberInput(attrs={'min': 0}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        translations = self.instance.translations or {}
+        for lang_code, lang_label in self.TRANSLATION_LANGUAGES:
+            key = f'name_{lang_code}'
+            self.fields[key] = forms.CharField(
+                required=False,
+                widget=forms.TextInput(attrs={'placeholder': 'Enter name'}),
+                label=f'Section Name ({lang_label})',
+                initial=(translations.get(lang_code) or {}).get('name', ''),
+            )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        translations = {}
+        for lang_code, _ in self.TRANSLATION_LANGUAGES:
+            value = (self.cleaned_data.get(f'name_{lang_code}') or '').strip()
+            if value:
+                translations[lang_code] = {'name': value}
+        instance.translations = translations
+        if self.cleaned_data.get('negative_marks_options'):
+            instance.negative_marks = self.cleaned_data['negative_marks_options'][0]
+        if commit:
+            instance.save()
+        return instance
 
 
 TestSectionFormSet = inlineformset_factory(
@@ -813,7 +903,7 @@ class QuestionForm(forms.ModelForm):
         model = Question
         fields = (
             'section', 'question_type', 'text', 'question_image', 'option_a', 'option_b', 'option_c', 'option_d',
-            'correct_answer', 'solution', 'marks', 'order',
+            'correct_answer', 'solution', 'marks', 'negative_marks', 'is_optional', 'order',
         )
         widgets = {
             'text': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Type the question here'}),
@@ -822,7 +912,8 @@ class QuestionForm(forms.ModelForm):
             'option_c': forms.TextInput(attrs={'placeholder': 'Option C'}),
             'option_d': forms.TextInput(attrs={'placeholder': 'Option D'}),
             'solution': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional explanation shown to students in "View Solutions"'}),
-            'marks': forms.NumberInput(attrs={'min': 1}),
+            'marks': forms.NumberInput(attrs={'min': 1, 'list': 'positiveMarksOptions'}),
+            'negative_marks': forms.NumberInput(attrs={'min': 0, 'step': '0.01', 'placeholder': 'Section default', 'list': 'negativeMarksOptions'}),
             'order': forms.NumberInput(attrs={'min': 0}),
         }
 

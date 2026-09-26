@@ -1,9 +1,13 @@
 import os
 import re
 import shutil
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.db import connection
 from django.utils import timezone
+
+IST = ZoneInfo('Asia/Kolkata')
 
 from . import dropbox_utils
 from .dropbox_utils import DropboxError
@@ -62,10 +66,12 @@ def list_db_backups():
         if not match:
             continue
         date_part, time_part = match.groups()
+        naive_utc = datetime.strptime(f'{date_part}{time_part}', '%Y%m%d%H%M%S')
+        local_dt = naive_utc.replace(tzinfo=ZoneInfo('UTC')).astimezone(IST)
         backups.append({
             'filename': entry['name'],
-            'date': f'{date_part[0:4]}-{date_part[4:6]}-{date_part[6:8]}',
-            'time': f'{time_part[0:2]}:{time_part[2:4]}:{time_part[4:6]}',
+            'date': local_dt.strftime('%Y-%m-%d'),
+            'time': local_dt.strftime('%I:%M:%S %p'),
         })
     backups.sort(key=lambda b: b['filename'], reverse=True)
     return backups

@@ -10,12 +10,13 @@
 .course-cell{display:flex;align-items:center;gap:12px}
 .course-title-text{font-weight:700;color:var(--ink)}
 .course-cat-text{font-size:12px;color:var(--muted)}
-.course-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.course-actions-row{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;justify-content:flex-end}
+.course-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;justify-content:flex-end}
 table.panel-table td:last-child{white-space:normal}
 .btn-sm{padding:7px 10px;font-size:12.5px;white-space:nowrap}
 .btn-danger{background:#FEF2F2;color:#DC2626}
 .btn-danger:hover{background:#DC2626;color:#fff}
+.btn-publish{background:#F0FDF4;color:#15803D}
+.btn-publish:hover{background:#15803D;color:#fff}
 .video-modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,15,20,.72);z-index:200;align-items:center;justify-content:center;padding:24px}
 .video-modal-overlay.is-open{display:flex}
 .video-modal-box{background:#000;border-radius:16px;max-width:900px;width:100%;position:relative;overflow:hidden}
@@ -23,6 +24,44 @@ table.panel-table td:last-child{white-space:normal}
 .video-modal-title{position:absolute;top:0;left:0;right:44px;padding:12px 16px;color:#fff;font-size:13.5px;font-weight:700;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent);z-index:2}
 .video-modal-close{position:absolute;top:8px;right:8px;z-index:3;width:32px;height:32px;border-radius:10px;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer}
 .video-modal-close:hover{background:rgba(255,255,255,.3)}
+
+.test-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#FAFAF9}
+.test-filter-bar select,.test-filter-search{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff}
+.test-filter-search{flex:1 1 220px;min-width:180px}
+.test-category-cell{width:190px;max-width:190px}
+.test-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;color:var(--muted);white-space:normal}
+.test-breadcrumb span:not(:last-child)::after{content:"›";margin-left:4px;color:var(--line)}
+.test-name-cell{white-space:normal;max-width:260px}
+.test-name-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.test-details-cell{white-space:normal;font-size:12px;color:#374151}
+.test-lang-badges{display:flex;gap:4px;margin-bottom:6px}
+.test-lang-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:800}
+.test-lang-badge.lang-en{background:#3B82F6}
+.test-lang-badge.lang-hi{background:#F59E0B}
+.test-lang-badge.lang-kn{background:#10B981}
+.test-details-row{display:flex;align-items:center;gap:5px;padding:2px 0}
+.test-status-cell{position:relative}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--ink);cursor:pointer}
+.status-pill .caret{font-size:9px;color:var(--muted)}
+.status-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:200px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 12px 30px rgba(17,24,39,.14)}
+.status-menu.is-open{display:block}
+.status-menu-group{margin-bottom:10px}
+.status-menu-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800;margin-bottom:6px}
+.status-menu-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px;font-size:13px;color:var(--ink);cursor:pointer;border-radius:6px}
+.status-menu-option:hover{background:#F8FAFC}
+.status-menu-option input{accent-color:var(--orange)}
+.status-menu-actions{display:flex;gap:8px;margin-top:10px}
+.status-menu-actions button{flex:1;padding:7px 0;border-radius:7px;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.status-menu-apply{background:var(--orange);color:#fff}
+.status-menu-cancel{background:#F3F4F6;color:#4B5563}
+.kebab-cell{position:relative;text-align:right}
+.kebab-toggle{width:30px;height:30px;border-radius:8px;border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer}
+.kebab-toggle:hover{background:#F3F4F6}
+.kebab-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:170px;padding:6px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 12px 30px rgba(17,24,39,.14);text-align:left}
+.kebab-menu.is-open{display:block}
+.kebab-menu a,.kebab-menu button{display:block;width:100%;padding:9px 10px;border:0;background:none;text-align:left;font-size:13px;color:var(--ink);border-radius:7px;cursor:pointer;font-family:inherit}
+.kebab-menu a:hover,.kebab-menu button:hover{background:#F8FAFC}
+.kebab-menu .danger{color:#DC2626}
 {% endblock %}
 
 {% block content %}
@@ -36,6 +75,14 @@ table.panel-table td:last-child{white-space:normal}
   <div class="panel-stat panel-stat-2">
     <span class="panel-stat-ico">❓</span>
     <div><div class="panel-stat-num">{{ stats.total_questions }}</div><div class="panel-stat-label">Total questions</div></div>
+  </div>
+  <div class="panel-stat panel-stat-3">
+    <span class="panel-stat-ico">✅</span>
+    <div><div class="panel-stat-num">{{ stats.published }}</div><div class="panel-stat-label">Published</div></div>
+  </div>
+  <div class="panel-stat panel-stat-4">
+    <span class="panel-stat-ico">🎓</span>
+    <div><div class="panel-stat-num">{{ stats.total_enrollments }}</div><div class="panel-stat-label">Paid enrollments</div></div>
   </div>
   {% else %}
   <div class="panel-stat panel-stat-2">
@@ -61,14 +108,116 @@ table.panel-table td:last-child{white-space:normal}
     {% for message in messages %}<p class="panel-alert">{{ message }}</p>{% endfor %}
   {% endif %}
 
+  {% if course_type == 'test_series' %}
+  <form class="test-filter-bar" method="get">
+    <input class="test-filter-search" type="search" name="q" value="{{ filters.q }}" placeholder="Search test series by name…">
+    <select name="category">
+      <option value="">All categories</option>
+      {% for cat in category_options %}<option value="{{ cat.pk }}" {% if filters.category == cat.pk|stringformat:"s" %}selected{% endif %}>{% for node in cat.get_breadcrumb %}{{ node.name }}{% if not forloop.last %} › {% endif %}{% endfor %}</option>{% endfor %}
+    </select>
+    <select name="test_type">
+      <option value="">All test types</option>
+      {% for value, label in test_type_choices %}<option value="{{ value }}" {% if filters.test_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="pricing">
+      <option value="">Free &amp; Paid</option>
+      <option value="free" {% if filters.pricing == 'free' %}selected{% endif %}>Free</option>
+      <option value="paid" {% if filters.pricing == 'paid' %}selected{% endif %}>Paid</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if filters_active %}<a class="btn btn-ghost btn-sm" href="{% url 'panel_course_list' course_type %}">Clear</a>{% endif %}
+  </form>
+  {% endif %}
+
   {% if courses %}
+    {% if course_type == 'test_series' %}
+    <div class="panel-table-wrap">
+      <table class="panel-table">
+        <thead>
+          <tr>
+            <th class="test-category-cell">Category</th>
+            <th>Test</th>
+            <th>Test Details</th>
+            <th>Test Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for course in courses %}
+          <tr>
+            <td class="test-category-cell">
+              <div class="test-breadcrumb">
+                {% for cat in course.category_breadcrumb %}<span>{{ cat.name }}</span>{% empty %}<span>—</span>{% endfor %}
+              </div>
+            </td>
+            <td class="test-name-cell">
+              <div class="course-title-text">{{ course.get_test_type_display|default:"—" }} <span style="font-weight:400">›</span> {{ course.name }}</div>
+              <div class="test-name-sub">{{ course.created_at|date:"D, M j, Y, g:i A" }}</div>
+            </td>
+            <td class="test-details-cell">
+              <div class="test-lang-badges">
+                {% with langs=course.languages_supported %}
+                  {% if not langs or 'en' in langs %}<span class="test-lang-badge lang-en" title="English">EN</span>{% endif %}
+                  {% if not langs or 'hi' in langs %}<span class="test-lang-badge lang-hi" title="Hindi">HI</span>{% endif %}
+                  {% if not langs or 'kn' in langs %}<span class="test-lang-badge lang-kn" title="Kannada">KN</span>{% endif %}
+                {% endwith %}
+              </div>
+              <div class="test-details-row">⏱ {{ course.duration_label }} 🏆 {{ course.total_marks|default:0 }} mark{{ course.total_marks|pluralize }}</div>
+              <div class="test-details-row">❓ {{ course.question_count|default:0 }} question{{ course.question_count|pluralize }}</div>
+              <div class="test-details-row">🎓 {{ course.enrollment_count|default:0 }} enrolled · 📊 {{ course.attempt_count|default:0 }} attempt{{ course.attempt_count|pluralize }}</div>
+            </td>
+            <td class="test-status-cell">
+              <button type="button" class="status-pill" data-status-toggle="status-menu-{{ course.pk }}">
+                {{ course.get_status_display }}, {% if course.is_free %}Free{% else %}Paid{% endif %} <span class="caret">▼</span>
+              </button>
+              <div class="status-menu" id="status-menu-{{ course.pk }}">
+                <form method="post" action="{% url 'panel_course_update_status' course_type course.pk %}">
+                  {% csrf_token %}
+                  <div class="status-menu-group">
+                    <div class="status-menu-title">Status</div>
+                    {% for value, label in status_choices %}
+                    <label class="status-menu-option">{{ label }}<input type="radio" name="status" value="{{ value }}" {% if course.status == value %}checked{% endif %}></label>
+                    {% endfor %}
+                  </div>
+                  <div class="status-menu-group">
+                    <div class="status-menu-title">Pricing</div>
+                    <label class="status-menu-option">Free<input type="radio" name="pricing" value="free" {% if course.is_free %}checked{% endif %}></label>
+                    <label class="status-menu-option">Paid<input type="radio" name="pricing" value="paid" {% if not course.is_free %}checked{% endif %}></label>
+                  </div>
+                  <div class="status-menu-actions">
+                    <button type="submit" class="status-menu-apply">Apply</button>
+                    <button type="button" class="status-menu-cancel" data-status-cancel>Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </td>
+            <td class="kebab-cell">
+              <button type="button" class="kebab-toggle" data-kebab-toggle="kebab-menu-{{ course.pk }}">⋮</button>
+              <div class="kebab-menu" id="kebab-menu-{{ course.pk }}">
+                <a href="{% url 'panel_question_list' course.pk %}">Questions ({{ course.question_count|default:0 }})</a>
+                <a href="{% url 'panel_course_edit' course_type course.pk %}">Edit</a>
+                <form method="post" action="{% url 'panel_course_delete' course_type course.pk %}" onsubmit="return confirm('Delete this course?');">
+                  {% csrf_token %}
+                  <button type="submit" class="danger">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
     <div class="panel-table-wrap">
       <table class="panel-table">
         <thead>
           <tr>
             <th>Order</th>
             <th>Course</th>
-            {% if course_type == 'test_series' %}<th>Test type</th>{% endif %}
             <th>Price</th>
             <th>Status</th>
             <th></th>
@@ -87,50 +236,49 @@ table.panel-table td:last-child{white-space:normal}
                 {% endif %}
                 <div>
                   <div class="course-title-text">{{ course.name }}</div>
-                  {% if course_type == 'test_series' %}
-                    {% if course.effective_categories %}<div class="course-cat-text">{% for cat in course.effective_categories %}{{ cat.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
-                  {% elif course.category %}<div class="course-cat-text">{{ course.category.name }}</div>{% endif %}
+                  {% if course.category %}<div class="course-cat-text">{{ course.category.name }}</div>{% endif %}
                   {% if course.enable_folders %}<div class="course-cat-text">📁 Folder mode enabled</div>{% endif %}
                   {% if course_type == 'video_course' and course.highlight_list %}<div class="course-cat-text">✓ {{ course.highlight_list|length }} highlight{{ course.highlight_list|length|pluralize }}</div>{% endif %}
                 </div>
               </div>
             </td>
-            {% if course_type == 'test_series' %}<td>{{ course.get_test_type_display|default:"—" }}</td>{% endif %}
             <td>₹{{ course.current_price }} {% if course.original_price and course.original_price != course.current_price %}<s>₹{{ course.original_price }}</s>{% endif %}</td>
             <td>{% if course.is_active %}<span class="panel-badge">Active</span>{% else %}<span class="panel-badge panel-badge-muted">Hidden</span>{% endif %}</td>
             <td>
               <div class="course-actions">
-                <div class="course-actions-row">
-                  {% if course_type == 'test_series' %}
-                    <a class="btn btn-ghost btn-sm" href="{% url 'panel_question_list' course.pk %}">Questions ({{ course.questions.count }})</a>
-                  {% elif course.enable_folders %}
-                    <a class="btn btn-ghost btn-sm" href="{% url 'panel_course_content' course_type course.pk %}">📁 Manage content</a>
-                    {% if course_type == 'video_course' %}
-                      <span class="panel-badge {% if not course.published_video_count %}panel-badge-muted{% endif %}">{{ course.published_video_count }} video{{ course.published_video_count|pluralize }}</span>
-                    {% else %}
-                      <span class="panel-badge {% if not course.published_document_count %}panel-badge-muted{% endif %}">{{ course.published_document_count }} PDF{{ course.published_document_count|pluralize }}</span>
-                    {% endif %}
-                  {% elif course_type == 'video_course' %}
-                    {% if course.video_file %}
-                      <button type="button" class="btn btn-ghost btn-sm preview-video-btn" data-video-url="{{ course.video_file.url }}" data-video-name="{{ course.name }}">▶ Preview video</button>
-                    {% else %}
-                      <span class="panel-badge panel-badge-muted">No video uploaded</span>
-                    {% endif %}
-                  {% elif course_type == 'elibrary' %}
-                    {% if course.pdf_file %}
-                      <a class="btn btn-ghost btn-sm" href="{{ course.pdf_file.url }}" target="_blank" rel="noopener">📄 Preview PDF</a>
-                    {% else %}
-                      <span class="panel-badge panel-badge-muted">No PDF uploaded</span>
-                    {% endif %}
+                {% if course.enable_folders %}
+                  <a class="btn btn-ghost btn-sm" href="{% url 'panel_course_content' course_type course.pk %}">📁 Manage content</a>
+                  {% if course_type == 'video_course' %}
+                    <span class="panel-badge {% if not course.published_video_count %}panel-badge-muted{% endif %}">{{ course.published_video_count }} video{{ course.published_video_count|pluralize }}</span>
+                  {% else %}
+                    <span class="panel-badge {% if not course.published_document_count %}panel-badge-muted{% endif %}">{{ course.published_document_count }} PDF{{ course.published_document_count|pluralize }}</span>
                   {% endif %}
-                </div>
-                <div class="course-actions-row">
-                  <a class="btn btn-ghost btn-sm" href="{% url 'panel_course_edit' course_type course.pk %}">Edit</a>
-                  <form method="post" action="{% url 'panel_course_delete' course_type course.pk %}" onsubmit="return confirm('Delete this course?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                  </form>
-                </div>
+                {% elif course_type == 'video_course' %}
+                  {% if course.video_file %}
+                    <button type="button" class="btn btn-ghost btn-sm preview-video-btn" data-video-url="{{ course.video_file.url }}" data-video-name="{{ course.name }}">▶ Preview video</button>
+                  {% else %}
+                    <span class="panel-badge panel-badge-muted">No video uploaded</span>
+                  {% endif %}
+                {% elif course_type == 'elibrary' %}
+                  {% if course.pdf_file %}
+                    <a class="btn btn-ghost btn-sm" href="{{ course.pdf_file.url }}" target="_blank" rel="noopener">📄 Preview PDF</a>
+                  {% else %}
+                    <span class="panel-badge panel-badge-muted">No PDF uploaded</span>
+                  {% endif %}
+                {% endif %}
+                <a class="btn btn-ghost btn-sm" href="{% url 'panel_course_edit' course_type course.pk %}">Edit</a>
+                <form method="post" action="{% url 'panel_course_toggle_active' course_type course.pk %}">
+                  {% csrf_token %}
+                  {% if course.is_active %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Unpublish</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-publish btn-sm">Publish</button>
+                  {% endif %}
+                </form>
+                <form method="post" action="{% url 'panel_course_delete' course_type course.pk %}" onsubmit="return confirm('Delete this course?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
               </div>
             </td>
           </tr>
@@ -138,6 +286,7 @@ table.panel-table td:last-child{white-space:normal}
         </tbody>
       </table>
     </div>
+    {% endif %}
   {% else %}
     <p class="panel-empty"><span class="panel-empty-ico">🗂️</span>No {{ type_label|lower }} added yet.</p>
   {% endif %}
@@ -181,6 +330,42 @@ table.panel-table td:last-child{white-space:normal}
   closeBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', function (e) {
     if (e.target === overlay) closeModal();
+  });
+})();
+
+(function () {
+  function closeAllMenus(except) {
+    document.querySelectorAll('.status-menu.is-open, .kebab-menu.is-open').forEach(function (menu) {
+      if (menu !== except) menu.classList.remove('is-open');
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var statusToggle = e.target.closest('[data-status-toggle]');
+    var kebabToggle = e.target.closest('[data-kebab-toggle]');
+    var cancelBtn = e.target.closest('[data-status-cancel]');
+
+    if (statusToggle) {
+      var menu = document.getElementById(statusToggle.dataset.statusToggle);
+      var isOpen = menu.classList.contains('is-open');
+      closeAllMenus();
+      if (!isOpen) menu.classList.add('is-open');
+      return;
+    }
+    if (kebabToggle) {
+      var kMenu = document.getElementById(kebabToggle.dataset.kebabToggle);
+      var kOpen = kMenu.classList.contains('is-open');
+      closeAllMenus();
+      if (!kOpen) kMenu.classList.add('is-open');
+      return;
+    }
+    if (cancelBtn) {
+      closeAllMenus();
+      return;
+    }
+    if (!e.target.closest('.status-menu') && !e.target.closest('.kebab-menu')) {
+      closeAllMenus();
+    }
   });
 })();
 {% endblock %}

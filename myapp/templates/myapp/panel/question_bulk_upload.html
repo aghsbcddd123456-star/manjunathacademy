@@ -15,7 +15,9 @@
 .bulk-upload-form .file-field-box{margin-top:8px;padding:9px 12px;border:1px dashed var(--line);border-radius:10px;background:#fff;font-size:13px}
 .bulk-upload-form .file-field-box input[type="file"]{max-width:100%;font-size:13px}
 .bulk-results{margin-top:18px;padding:16px 18px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0}
+.bulk-results.has-errors{background:#FEF2F2;border-color:#FECACA}
 .bulk-results h4{margin:0 0 8px;font-size:14px;color:#166534}
+.bulk-results.has-errors h4{color:#B91C1C}
 .bulk-results ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
 .bulk-results .bulk-warnings{color:#92400E}
 .bulk-results .bulk-errors{color:#B91C1C}
@@ -73,13 +75,14 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
   <p class="custom-help" style="margin-top:10px">Either paste a Google Docs link (open the doc's <strong>Share</strong> menu and set general access to "Anyone with the link can view" first) or upload a <code>.docx</code>/<code>.txt</code> file exported from Google Docs via File → Download. Pick a section here to put every question into that one section — this overrides each question's own <code>Section:</code> line. Leave it on the first option to use whatever each question's <code>Section:</code> line says.</p>
 
   {% if results %}
-  <div class="bulk-results">
-    <h4>{{ results.created }} question{{ results.created|pluralize }} imported</h4>
-    {% if results.warnings %}
-      <ul class="bulk-warnings">{% for w in results.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
-    {% endif %}
-    {% if results.errors %}
-      <ul class="bulk-errors">{% for e in results.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  <div class="bulk-results{% if results.errors or results.warnings %} has-errors{% endif %}">
+    {% if results.errors or results.warnings %}
+      <h4>{{ results.issue_count }} issue{{ results.issue_count|pluralize }} found — nothing was imported</h4>
+      <p class="custom-help">Fix everything listed below in your document and re-upload — the whole file must be clean before any question is imported.</p>
+      {% if results.errors %}<ul class="bulk-errors">{% for e in results.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      {% if results.warnings %}<ul class="bulk-errors">{% for w in results.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+    {% else %}
+      <h4>{{ results.created }} question{{ results.created|pluralize }} imported</h4>
     {% endif %}
   </div>
   {% endif %}
@@ -100,9 +103,12 @@ table.format-table code{background:var(--surface-2);padding:2px 6px;border-radiu
           <tr><td><code>Solution: …</code> or <code>[SOL] …</code></td><td>No</td><td>Optional explanation shown to students under "View Solutions" after they submit. Can sit on its own line, even after a blank line.</td></tr>
           <tr><td><code>Marks: …</code></td><td>No — defaults to 1</td><td>Whole number of marks for the question</td></tr>
           <tr><td><code>Section: …</code></td><td>No — defaults to unassigned</td><td>Must exactly match an existing section name for this test</td></tr>
+          <tr><td><code>[HI] …</code> / <code>[KN] …</code></td><td>No</td><td>Hindi/Kannada translation of the line directly above it — put it right after the <code>Q1. …</code> question line to translate the question, or right after an <code>A) …</code>/<code>B) …</code>/etc. option line to translate that option. Not supported for Answer/Solution/Marks/Section lines.</td></tr>
         </tbody>
       </table>
     </div>
+
+    <p class="custom-help" style="margin-top:14px">To add Hindi or Kannada text, insert a <code>[HI]</code> or <code>[KN]</code> line immediately below the English line it translates — one translation line per language, right after the question or the option it belongs to. Missing translations are fine; students just see the English version for that language. This works the same on Google Docs, .docx and .txt uploads.</p>
 
     <div class="type-guide-grid">
       <div class="type-guide-card">
@@ -116,6 +122,22 @@ D) Chennai
 Answer: B
 Solution: New Delhi has been the capital of India since 1911.
 Marks: 1</code>
+      </div>
+      <div class="type-guide-card">
+        <h5>With Hindi &amp; Kannada translations</h5>
+        <p><code>[HI]</code>/<code>[KN]</code> lines go right after the line they translate — question or option.</p>
+        <code>Q1. What is the capital of India?
+[HI] भारत की राजधानी क्या है?
+[KN] ಭಾರತದ ರಾಜಧಾನಿ ಯಾವುದು?
+A) Mumbai
+[HI] मुंबई
+[KN] ಮುಂಬೈ
+B) New Delhi
+[HI] नई दिल्ली
+[KN] ಹೊಸ ದೆಹಲಿ
+C) Kolkata
+D) Chennai
+Answer: B</code>
       </div>
       <div class="type-guide-card">
         <h5>[Q] / [ANS] / [SOL] style also works</h5>

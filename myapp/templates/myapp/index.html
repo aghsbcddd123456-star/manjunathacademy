@@ -114,7 +114,7 @@
 
         {% if banner_slides %}
           {% for slide in banner_slides %}
-          <article class="promo-slide{% if forloop.first %} is-active{% endif %}{% if not slide.display_image_url %} promo-slide-noimg{% endif %}{% if not slide.kicker and not slide.title and not slide.subtitle and not slide.button_text %} promo-slide-notext{% endif %}"{% if slide.display_image_url %} style="background-image:url('{{ slide.display_image_url }}')"{% endif %}{% if slide.link %} data-link="{{ slide.link }}"{% endif %}>
+          <article class="promo-slide{% if forloop.first %} is-active{% endif %}{% if not slide.display_image_url %} promo-slide-noimg{% endif %}{% if not slide.kicker and not slide.title and not slide.subtitle and not slide.button_text %} promo-slide-notext{% endif %}"{% if slide.display_image_url %} style="--bg-desktop:url('{{ slide.display_image_url }}');--bg-mobile:url('{{ slide.display_mobile_image_url }}')"{% endif %}{% if slide.link %} data-link="{{ slide.link }}"{% endif %}>
             {% if slide.kicker %}<p class="promo-kicker">{{ slide.kicker }}</p>{% endif %}
             {% if slide.title %}<h2 class="promo-title">{{ slide.title }}</h2>{% endif %}
             {% if slide.subtitle %}<p class="promo-sub">{{ slide.subtitle }}</p>{% endif %}
@@ -185,6 +185,16 @@
         {% elif hero.visual_type == 'video' and hero.visual_video_url %}
           {% if hero.visual_video_is_direct_file %}
             <video class="hero-visual-media" src="{{ hero.visual_video_url }}" controls></video>
+          {% elif hero.visual_youtube_id %}
+            <iframe class="hero-visual-media" id="heroYoutubeFrame" src="{{ hero.visual_video_embed_url }}" title="Hero video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div class="hero-video-fallback" id="heroYoutubeFallback" hidden style="background-image:url('{{ hero.visual_youtube_thumbnail_url }}')">
+              <div class="hero-video-fallback-inner">
+                <span class="hero-video-fallback-badge">▶ YouTube</span>
+                <p class="hero-video-fallback-title">This video isn't set up to play here</p>
+                <p class="hero-video-fallback-sub">Its owner has restricted embedding on other websites — this is a YouTube setting, not a site issue. Watch it directly on YouTube instead.</p>
+                <a class="btn btn-primary btn-sm" href="{{ hero.visual_video_url }}" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+              </div>
+            </div>
           {% else %}
             <iframe class="hero-visual-media" src="{{ hero.visual_video_embed_url }}" title="Hero video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
           {% endif %}
@@ -857,6 +867,44 @@
       window.prompt('Copy this link', url);
     }
   });
+})();
+
+/* Hero video: some YouTube videos disallow playback on other sites (their own
+   embedding setting, error codes 101/150/153). Detect that via the YouTube
+   IFrame API and swap the raw YouTube error screen for a friendlier card. */
+(function () {
+  var frame = document.getElementById('heroYoutubeFrame');
+  var fallback = document.getElementById('heroYoutubeFallback');
+  if (!frame || !fallback) return;
+
+  function showFallback() {
+    frame.style.display = 'none';
+    fallback.hidden = false;
+  }
+
+  function initPlayer() {
+    if (!window.YT || !window.YT.Player) return;
+    new YT.Player(frame, {
+      events: {
+        onError: function (e) {
+          if ([100, 101, 150, 153].indexOf(e.data) !== -1) showFallback();
+        },
+      },
+    });
+  }
+
+  if (window.YT && window.YT.Player) {
+    initPlayer();
+  } else {
+    var previousReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+      if (typeof previousReady === 'function') previousReady();
+      initPlayer();
+    };
+    var script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(script);
+  }
 })();
 
 {% endblock %}

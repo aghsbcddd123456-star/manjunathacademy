@@ -6,11 +6,27 @@
       {% if section_form.instance.pk %}<label class="video-admin-remove">{{ section_form.DELETE }} Delete section</label>{% else %}<button class="video-admin-remove-new" type="button" data-remove-row>✕ Remove</button>{% endif %}
     </div>
   </div>
+  <div class="test-section-names">
+    <label><span class="panel-label-text">Section Name (English)</span>{{ section_form.name }}{% if section_form.name.errors %}<ul class="panel-errors">{% for e in section_form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</label>
+    <label><span class="panel-label-text">Section Name (हिन्दी)</span>{{ section_form.name_hi }}</label>
+    <label><span class="panel-label-text">Section Name (ಕನ್ನಡ)</span>{{ section_form.name_kn }}</label>
+  </div>
+  <div class="test-section-marks">
+    <label><span class="panel-label-text">Positive Marks</span>
+      <div class="tag-input-box"><div class="tag-input-chips"></div><input type="text" class="tag-input-typer" placeholder="Type a value and press Enter">{{ section_form.positive_marks_options }}</div>
+      <p class="custom-help">{{ section_form.positive_marks_options.help_text }}</p>
+    </label>
+    <label><span class="panel-label-text">Negative Marks</span>
+      <div class="tag-input-box"><div class="tag-input-chips"></div><input type="text" class="tag-input-typer" placeholder="Type a value and press Enter">{{ section_form.negative_marks_options }}</div>
+      <p class="custom-help">{{ section_form.negative_marks_options.help_text }}</p>
+    </label>
+  </div>
   <div class="test-section-fields">
-    <label><span class="panel-label-text">Section name</span>{{ section_form.name }}{% if section_form.name.errors %}<ul class="panel-errors">{% for e in section_form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</label>
-    <label><span class="panel-label-text">Negative marks</span>{{ section_form.negative_marks }}</label>
+    <label><span class="panel-label-text">Time limit (minutes)</span>{{ section_form.duration_minutes }}</label>
+    <label><span class="panel-label-text">Max optional questions</span>{{ section_form.max_optional_questions }}</label>
     <label><span class="panel-label-text">Order</span>{{ section_form.order }}</label>
     <label class="panel-form-check test-section-optional">{{ section_form.is_optional }} Optional section</label>
+    <label class="panel-form-check test-section-optional">{{ section_form.disable_shuffling }} Disable Shuffling</label>
   </div>
   {% if section_form.non_field_errors %}<ul class="panel-errors">{% for e in section_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
 </div>

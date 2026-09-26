@@ -41,9 +41,16 @@
 .video-admin-item-body .file-field-box{min-height:62px;padding:10px 12px;overflow:hidden}.video-admin-item-body input[type="file"]{max-width:100%}
 .video-admin-add{margin-top:2px}
 .video-admin-existing-preview{margin-top:8px}.video-admin-existing-preview summary{cursor:pointer;color:var(--orange-deep);font-weight:700}.video-admin-existing-preview video{display:block;width:min(520px,100%);max-height:280px;margin-top:9px;border-radius:9px;background:#000}
-.test-sections-admin{margin:18px 0;padding:22px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:16px}.test-sections-admin h3{font-size:17px;margin:0 0 5px}.test-sections-admin>p{font-size:12.5px;color:var(--muted);margin:0 0 14px}.test-section-fields{display:grid;grid-template-columns:minmax(220px,1fr) 150px 100px 170px;gap:14px;align-items:start}.test-section-optional{margin-top:27px}
+.test-sections-admin{margin:18px 0;padding:22px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:16px}.test-sections-admin h3{font-size:17px;margin:0 0 5px}.test-sections-admin>p{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.test-section-names{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:14px;align-items:start;margin-bottom:14px}
+.test-section-marks{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:14px}
+.test-section-fields{display:grid;grid-template-columns:150px 150px 100px 150px 150px;gap:14px;align-items:start}.test-section-optional{margin-top:27px}
+.tag-input-box{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.tag-input-box .tag-input-typer{flex:1 1 90px;min-width:90px;border:0!important;padding:5px 2px!important;outline:none}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:#EEF2FA;color:#344A85;font-size:12.5px;font-weight:700}
+.tag-chip button{border:0;background:none;color:#344A85;cursor:pointer;font-size:13px;line-height:1;padding:0}
 @media (max-width:1100px){.video-admin-item-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-@media (max-width:900px){.test-section-fields{grid-template-columns:1fr 1fr}.test-section-optional{margin-top:0}}
+@media (max-width:900px){.test-section-names{grid-template-columns:1fr}.test-section-marks{grid-template-columns:1fr}.test-section-fields{grid-template-columns:1fr 1fr}.test-section-optional{margin-top:0}}
 @media (max-width:560px){.course-form-row{grid-template-columns:1fr}}
 @media (max-width:560px){.video-admin-item-body{grid-template-columns:1fr}}
 .taxonomy-picker{margin-bottom:18px;padding:18px;border:1px solid var(--line);border-radius:14px;background:#F8FAFC}
@@ -225,11 +232,36 @@
       <p class="custom-help">Optional — students see a live countdown and the test auto-submits when time runs out.</p>
     </label>
 
+    <label><span class="panel-label-text">Language(s) Supported</span>
+      <div class="category-checkbox-list" style="max-height:none">
+        {% for choice in form.languages_supported %}
+          <label class="category-checkbox-row">{{ choice.tag }} <span>{{ choice.choice_label }}</span></label>
+        {% endfor %}
+      </div>
+      {% if form.languages_supported.errors %}<ul class="panel-errors">{% for e in form.languages_supported.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <p class="custom-help">Questions have to be uploaded in the languages you will select here.</p>
+    </label>
+
+    <label class="panel-form-check">{{ form.disable_partial_marking }} Disable Partial Marking</label>
+    <p class="custom-help">Disable partial marking for the test. Marks will be rewarded only if the entire answer is correct, with no marks for partially correct answers.</p>
+
+    <label class="panel-form-check">{{ form.enable_sectional_timing }} Enable Sectional Timing</label>
+    <p class="custom-help">Enable fixed timing for each of the test sections. Student will not be able to change section before the allotted duration is over for that section.</p>
+
+    <label class="panel-form-check">{{ form.enable_optional_section }} Enable Optional Section</label>
+    <p class="custom-help">Enable optional sectional feature for the test. You will be able to mark some of the sections as optional, and student can choose among the optional section(s) they want to attempt. For sections that are not marked "optional" will be compulsory to attempt.</p>
+
     <label><span class="panel-label-text">Maximum optional sections</span>
       {{ form.max_optional_sections }}
       {% if form.max_optional_sections.errors %}<ul class="panel-errors">{% for e in form.max_optional_sections.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
       <p class="custom-help">How many optional sections a student may select on the second instruction page. Use 0 to disable optional selection.</p>
     </label>
+
+    <label class="panel-form-check">{{ form.enable_optional_questions_in_section }} Enable Optional Questions in Section</label>
+    <p class="custom-help">Enable optional questions in section feature for the test. You will be able to add section with optional questions in it, and student can choose among the optional questions(s) they want to attempt in particular section.</p>
+
+    <label class="panel-form-check">{{ form.all_questions_mandatory }} All Question Mandatory</label>
+    <p class="custom-help">Prevent User Skipping Question for the test. Student will not be able to skip questions.</p>
 
     <label class="panel-form-check">{{ form.shuffle_questions }} Shuffle questions (each student gets a different question order)</label>
 
@@ -373,4 +405,62 @@ setupDynamicFormset({
   listId: 'testSectionList', addBtnId: 'addTestSectionBtn', templateId: 'testSectionTemplate',
   prefix: 'sections', itemLabel: 'Section',
 });
+
+/* Tag inputs: "Positive Marks" / "Negative Marks" — type a value, press Enter to add a chip.
+   The visible .tag-input-typer is a plain UI helper; the real hidden field keeps the
+   comma-separated list Django expects, kept in sync on every add/remove. */
+(function () {
+  function getChips(hiddenInput) {
+    return (hiddenInput.value || '').split(',').map(function (v) { return v.trim(); }).filter(Boolean);
+  }
+  function setChips(box, hiddenInput, chips) {
+    hiddenInput.value = chips.join(',');
+    var chipsBox = box.querySelector('.tag-input-chips');
+    chipsBox.innerHTML = '';
+    chips.forEach(function (chip, i) {
+      var el = document.createElement('span');
+      el.className = 'tag-chip';
+      el.textContent = chip;
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', 'Remove ' + chip);
+      remove.textContent = '✕';
+      remove.dataset.index = i;
+      el.appendChild(remove);
+      chipsBox.appendChild(el);
+    });
+  }
+
+  document.querySelectorAll('.tag-input-box').forEach(function (box) {
+    var hiddenInput = box.querySelector('input.tag-input');
+    if (hiddenInput) setChips(box, hiddenInput, getChips(hiddenInput));
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!e.target.classList || !e.target.classList.contains('tag-input-typer')) return;
+    if (e.key !== 'Enter' && e.key !== ',') return;
+    e.preventDefault();
+    var typer = e.target;
+    var value = typer.value.trim();
+    if (!value) return;
+    var box = typer.closest('.tag-input-box');
+    var hiddenInput = box.querySelector('input.tag-input');
+    if (!hiddenInput) return;
+    var chips = getChips(hiddenInput);
+    chips.push(value);
+    setChips(box, hiddenInput, chips);
+    typer.value = '';
+  });
+
+  document.addEventListener('click', function (e) {
+    var removeBtn = e.target.closest('.tag-chip button');
+    if (!removeBtn) return;
+    var box = removeBtn.closest('.tag-input-box');
+    var hiddenInput = box.querySelector('input.tag-input');
+    if (!hiddenInput) return;
+    var chips = getChips(hiddenInput);
+    chips.splice(parseInt(removeBtn.dataset.index, 10), 1);
+    setChips(box, hiddenInput, chips);
+  });
+})();
 {% endblock %}

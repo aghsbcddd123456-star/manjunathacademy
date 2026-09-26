@@ -22,7 +22,8 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Sum
+from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -67,6 +68,7 @@ from .forms import (
     ExamTickerSettingsForm,
     ExtraPageForm,
     FAQItemForm,
+    hierarchical_category_queryset,
     FeeInvoiceForm,
     FooterSettingsForm,
     GalleryImageForm,
@@ -714,29 +716,40 @@ def classroom_pay(request, pk):
     return render(request, 'myapp/classroom_pay.html', {'member': member, 'classroom': member.classroom})
 
 
+def _section_marks_options_json(course):
+    return json.dumps({
+        section.pk: {'positive': section.positive_marks_options, 'negative': section.negative_marks_options}
+        for section in course.test_sections.all()
+    })
+
+
 def _test_section_rows(course, selected_ids=None):
     selected_ids = {int(value) for value in (selected_ids or [])}
+    optional_enabled = course.enable_optional_section
     rows = []
     for section in course.test_sections.prefetch_related('questions'):
         questions = list(section.questions.all())
+        is_optional = section.is_optional and optional_enabled
         rows.append({
             'section': section,
             'question_count': len(questions),
             'maximum_marks': sum(question.marks for question in questions),
             'positive_marks': questions[0].marks if questions else 0,
-            'selected': section.pk in selected_ids or not section.is_optional,
+            'selected': section.pk in selected_ids or not is_optional,
+            'is_optional': is_optional,
         })
     return rows
 
 
 def _save_attempt_section_choices(attempt, course, request):
     sections = list(course.test_sections.all())
-    valid_optional_ids = {section.pk for section in sections if section.is_optional}
-    required_ids = [section.pk for section in sections if not section.is_optional]
+    optional_enabled = course.enable_optional_section
+    valid_optional_ids = {section.pk for section in sections if section.is_optional and optional_enabled}
+    required_ids = [section.pk for section in sections if section.pk not in valid_optional_ids]
     requested_ids = {
         int(value) for value in request.POST.getlist('selected_sections') if value.isdigit()
     }
-    optional_limit = max(0, course.max_optional_sections)
+    optional_limit = max(0, course.max_optional_sections) if optional_enabled else 0
     selected_optional_ids = [
         section.pk for section in sections
         if section.pk in requested_ids and section.pk in valid_optional_ids
@@ -748,9 +761,11 @@ def _save_attempt_section_choices(attempt, course, request):
 def _attempt_questions(attempt):
     questions = attempt.course.questions.select_related('section')
     if attempt.course.test_sections.exists():
-        selected_ids = attempt.selected_section_ids or list(
-            attempt.course.test_sections.filter(is_optional=False).values_list('pk', flat=True)
-        )
+        if attempt.course.enable_optional_section:
+            default_ids = attempt.course.test_sections.filter(is_optional=False).values_list('pk', flat=True)
+        else:
+            default_ids = attempt.course.test_sections.values_list('pk', flat=True)
+        selected_ids = attempt.selected_section_ids or list(default_ids)
         questions = questions.filter(Q(section__isnull=True) | Q(section_id__in=selected_ids))
 
     if attempt.question_order:
@@ -762,9 +777,14 @@ def _attempt_questions(attempt):
 def _create_test_attempt(user, course):
     attempt = TestAttempt.objects.create(user=user, course=course)
     if course.shuffle_questions:
-        question_ids = list(course.questions.values_list('pk', flat=True))
-        random.shuffle(question_ids)
-        attempt.question_order = question_ids
+        question_order = list(course.questions.filter(section__isnull=True).values_list('pk', flat=True))
+        random.shuffle(question_order)
+        for section in course.test_sections.all():
+            section_ids = list(section.questions.values_list('pk', flat=True))
+            if not section.disable_shuffling:
+                random.shuffle(section_ids)
+            question_order.extend(section_ids)
+        attempt.question_order = question_order
         attempt.save(update_fields=['question_order'])
     return attempt
 
@@ -802,7 +822,9 @@ def classroom_test_start(request, pk):
         'total_marks': course.questions.aggregate(total=Sum('marks'))['total'] or 0,
         'existing_attempt': existing_attempt,
         'section_rows': section_rows,
-        'optional_section_rows': [row for row in section_rows if row['section'].is_optional],
+        'optional_section_rows': [row for row in section_rows if row['is_optional']],
+        'has_sectional_timing': course.enable_sectional_timing and any(row['section'].duration_minutes for row in section_rows),
+        'available_languages': course.languages_supported,
         'instructions_settings': ExamInstructionsSettings.load(),
         'hide_site_chrome': True,
     })
@@ -972,6 +994,29 @@ def _grade_answer(question, submitted):
     normalized_submitted = ' '.join(submitted.split()).casefold()
     normalized_correct = ' '.join(correct.split()).casefold()
     return normalized_submitted == normalized_correct
+
+
+def _grade_and_score(question, submitted, negative_marks, disable_partial_marking):
+    """Grades one answer, returning (is_correct, marks_awarded). Multiple Correct Answer questions get
+    proportional partial credit for a correct-but-incomplete subset of options, unless partial marking
+    is disabled for the test — in which case only a full match earns marks, like every other question type."""
+    submitted = (submitted or '').strip()
+    if question.question_type == Question.MULTIPLE and not disable_partial_marking:
+        correct = (question.correct_answer or '').strip()
+        submitted_set = {part.strip().upper() for part in submitted.split(',') if part.strip()}
+        correct_set = {part.strip().upper() for part in correct.split(',') if part.strip()}
+        if not submitted_set or not correct_set:
+            return False, Decimal('0')
+        if submitted_set == correct_set:
+            return True, question.marks
+        if submitted_set.issubset(correct_set):
+            partial = (Decimal(question.marks) * len(submitted_set) / len(correct_set)).quantize(Decimal('0.01'))
+            return False, partial
+        return False, -negative_marks
+
+    is_correct = _grade_answer(question, submitted)
+    marks_awarded = question.marks if is_correct else (-negative_marks if submitted else Decimal('0'))
+    return is_correct, marks_awarded
 
 
 def test_series_detail(request, pk):
@@ -1212,7 +1257,9 @@ def test_attempt_start(request, pk):
         'total_marks': course.questions.aggregate(total=Sum('marks'))['total'] or 0,
         'existing_attempt': existing_attempt,
         'section_rows': section_rows,
-        'optional_section_rows': [row for row in section_rows if row['section'].is_optional],
+        'optional_section_rows': [row for row in section_rows if row['is_optional']],
+        'has_sectional_timing': course.enable_sectional_timing and any(row['section'].duration_minutes for row in section_rows),
+        'available_languages': course.languages_supported,
         'instructions_settings': ExamInstructionsSettings.load(),
         'hide_site_chrome': True,
     })
@@ -1227,16 +1274,19 @@ def test_attempt_take(request, pk):
     questions = _attempt_questions(attempt)
 
     if request.method == 'POST':
-        total_marks = 0
-        score = 0
+        course = attempt.course
+        optional_questions_enabled = course.enable_optional_questions_in_section
+        answer_records = []
         for question in questions:
             if question.question_type == Question.MULTIPLE:
                 submitted = ','.join(request.POST.getlist(f'q_{question.id}'))
             else:
                 submitted = request.POST.get(f'q_{question.id}', '')
-            is_correct = _grade_answer(question, submitted)
-            negative_marks = question.section.negative_marks if question.section_id else Decimal('0')
-            marks_awarded = question.marks if is_correct else (-negative_marks if submitted else Decimal('0'))
+            if question.negative_marks is not None:
+                negative_marks = question.negative_marks
+            else:
+                negative_marks = question.section.negative_marks if question.section_id else Decimal('0')
+            is_correct, marks_awarded = _grade_and_score(question, submitted, negative_marks, course.disable_partial_marking)
             TestAnswer.objects.update_or_create(
                 attempt=attempt, question=question,
                 defaults={
@@ -1250,8 +1300,33 @@ def test_attempt_take(request, pk):
                     'question_marks_snapshot': question.marks,
                 },
             )
+            answer_records.append((question, marks_awarded))
+
+        capped_section_ids = set()
+        section_optional_marks = {}
+        if optional_questions_enabled:
+            for question, marks_awarded in answer_records:
+                if question.section_id and question.is_optional:
+                    section_optional_marks.setdefault(question.section_id, []).append((question.marks, marks_awarded))
+            for section in course.test_sections.all():
+                if section.max_optional_questions and section.pk in section_optional_marks:
+                    capped_section_ids.add(section.pk)
+
+        total_marks = 0
+        score = 0
+        for question, marks_awarded in answer_records:
+            if question.section_id in capped_section_ids and question.is_optional:
+                continue
             total_marks += question.marks
             score += marks_awarded
+
+        for section in course.test_sections.all():
+            if section.pk not in capped_section_ids:
+                continue
+            cap = section.max_optional_questions
+            pairs = section_optional_marks[section.pk]
+            total_marks += sum(sorted((marks for marks, _ in pairs), reverse=True)[:cap])
+            score += sum(sorted((awarded for _, awarded in pairs), reverse=True)[:cap])
 
         attempt.total_marks = total_marks
         attempt.score = score
@@ -1259,24 +1334,29 @@ def test_attempt_take(request, pk):
         attempt.save()
         return redirect('test_attempt_result', pk=attempt.pk)
 
-    question_list = list(questions)
-    for index, question in enumerate(question_list, start=1):
-        question.exam_number = index
+    unordered_list = list(questions)
     exam_sections = []
     for section in attempt.course.test_sections.filter(pk__in=attempt.selected_section_ids):
-        section_questions = [question for question in question_list if question.section_id == section.pk]
+        section_questions = [question for question in unordered_list if question.section_id == section.pk]
         if section_questions:
             exam_sections.append({'section': section, 'questions': section_questions})
-    general_questions = [question for question in question_list if question.section_id is None]
+    general_questions = [question for question in unordered_list if question.section_id is None]
     if general_questions:
         exam_sections.insert(0, {'section': None, 'name': 'General', 'questions': general_questions})
-    if not exam_sections and question_list:
-        exam_sections = [{'section': None, 'name': 'Section A', 'questions': question_list}]
+    if not exam_sections and unordered_list:
+        exam_sections = [{'section': None, 'name': 'Section A', 'questions': unordered_list}]
+
+    question_list = [question for group in exam_sections for question in group['questions']]
+    for index, question in enumerate(question_list, start=1):
+        question.exam_number = index
+    has_translations = any(question.translations for question in question_list)
     messages.warning(request, 'Switching tabs or leaving this page will submit your test automatically — stay here until you submit.')
     return render(request, 'myapp/test_attempt_take.html', {
         'attempt': attempt,
         'questions': question_list,
         'exam_sections': exam_sections,
+        'has_translations': has_translations,
+        'available_languages': attempt.course.languages_supported,
         'instructions_settings': ExamInstructionsSettings.load(),
         'hide_site_chrome': True,
     })
@@ -1344,9 +1424,36 @@ def test_attempt_result(request, pk):
         ) if bucket['total'] else 0
         section_results.append(bucket)
 
+    review_questions = []
+    for index, answer in enumerate(answers, start=1):
+        question = answer.question
+        options = []
+        question_type = question.question_type if question else Question.SINGLE
+        if question and question_type in (Question.SINGLE, Question.MULTIPLE):
+            for letter in ('A', 'B', 'C', 'D'):
+                text = getattr(question, f'option_{letter.lower()}', '')
+                if text:
+                    options.append({'letter': letter, 'text': text})
+        elif question_type == Question.TRUE_FALSE:
+            options = [{'letter': 'True', 'text': 'True'}, {'letter': 'False', 'text': 'False'}]
+
+        review_questions.append({
+            'number': index,
+            'type': question_type,
+            'text': answer.question_text_snapshot,
+            'image_url': question.question_image.url if question and question.question_image else None,
+            'options': options,
+            'correct_answer': answer.correct_answer_snapshot,
+            'submitted_answer': answer.submitted_answer,
+            'was_correct': answer.is_correct,
+            'solution': answer.solution_snapshot,
+            'marks_awarded': str(answer.marks_awarded),
+        })
+
     return render(request, 'myapp/test_attempt_result.html', {
         'attempt': attempt,
         'answers': answers,
+        'review_questions': review_questions,
         'chart_correct': chart_correct,
         'chart_incorrect': chart_incorrect,
         'rank': rank,
@@ -3053,8 +3160,63 @@ def panel_course_list(request, course_type):
     courses = Course.objects.filter(course_type=course_type).select_related('category').prefetch_related('categories')
 
     stats = {'total': courses.count()}
+    filters = {}
+    category_options = []
     if course_type == Course.TEST_SERIES:
         stats['total_questions'] = Question.objects.filter(course__course_type=course_type).count()
+        stats['total_enrollments'] = CourseEnrollment.objects.filter(course__course_type=course_type, is_paid=True).count()
+        stats['published'] = courses.filter(status=Course.STATUS_PUBLISHED).count()
+
+        question_count_sq = (
+            Question.objects.filter(course=OuterRef('pk')).order_by().values('course').annotate(c=Count('id')).values('c')
+        )
+        total_marks_sq = (
+            Question.objects.filter(course=OuterRef('pk')).order_by().values('course').annotate(s=Sum('marks')).values('s')
+        )
+        enrollment_count_sq = (
+            CourseEnrollment.objects.filter(course=OuterRef('pk'), is_paid=True)
+            .order_by().values('course').annotate(c=Count('id')).values('c')
+        )
+        attempt_count_sq = (
+            TestAttempt.objects.filter(course=OuterRef('pk')).order_by().values('course').annotate(c=Count('id')).values('c')
+        )
+        courses = courses.prefetch_related('categories__parent__parent__parent').annotate(
+            question_count=Coalesce(Subquery(question_count_sq, output_field=IntegerField()), 0),
+            total_marks=Coalesce(Subquery(total_marks_sq, output_field=IntegerField()), 0),
+            enrollment_count=Coalesce(Subquery(enrollment_count_sq, output_field=IntegerField()), 0),
+            attempt_count=Coalesce(Subquery(attempt_count_sq, output_field=IntegerField()), 0),
+        )
+
+        search = request.GET.get('q', '').strip()
+        test_type_filter = request.GET.get('test_type', '').strip()
+        status_filter = request.GET.get('status', '').strip()
+        pricing_filter = request.GET.get('pricing', '').strip()
+        category_filter = request.GET.get('category', '').strip()
+
+        if search:
+            courses = courses.filter(name__icontains=search)
+        if test_type_filter:
+            courses = courses.filter(test_type=test_type_filter)
+        if status_filter:
+            courses = courses.filter(status=status_filter)
+        if pricing_filter == 'free':
+            courses = courses.filter(Q(force_free=True) | Q(current_price__lte=0))
+        elif pricing_filter == 'paid':
+            courses = courses.filter(force_free=False, current_price__gt=0)
+        if category_filter.isdigit():
+            courses = courses.filter(Q(categories__id=category_filter) | Q(category_id=category_filter))
+
+        courses = courses.distinct()
+
+        for course in courses:
+            first_category = course.effective_categories[0] if course.effective_categories else None
+            course.category_breadcrumb = first_category.get_breadcrumb() if first_category else []
+
+        filters = {
+            'q': search, 'test_type': test_type_filter, 'status': status_filter,
+            'pricing': pricing_filter, 'category': category_filter,
+        }
+        category_options = hierarchical_category_queryset()
     elif course_type == Course.VIDEO_COURSE:
         courses = courses.prefetch_related('videos')
         stats['total_videos'] = sum(c.published_video_count for c in courses)
@@ -3067,6 +3229,11 @@ def panel_course_list(request, course_type):
         'type_label': COURSE_TYPE_LABELS[course_type],
         'stats': stats,
         'test_series_nav': 'manage',
+        'status_choices': Course.STATUS_CHOICES,
+        'test_type_choices': Course.TEST_TYPE_CHOICES,
+        'category_options': category_options,
+        'filters': filters,
+        'filters_active': bool(filters.get('q') or filters.get('test_type') or filters.get('status') or filters.get('pricing') or filters.get('category')),
     })
 
 
@@ -3203,6 +3370,37 @@ def panel_course_delete(request, course_type, pk):
     if request.method == 'POST':
         course.delete()
         messages.success(request, 'Course deleted')
+    return redirect('panel_course_list', course_type=course_type)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_course_toggle_active(request, course_type, pk):
+    _course_type_or_404(course_type)
+    course = get_object_or_404(Course, pk=pk, course_type=course_type)
+    if request.method == 'POST':
+        course.is_active = not course.is_active
+        course.status = Course.STATUS_PUBLISHED if course.is_active else Course.STATUS_ARCHIVED
+        course.save(update_fields=['is_active', 'status'])
+        messages.success(request, f'{course.name} is now {"published" if course.is_active else "unpublished"}.')
+    return redirect('panel_course_list', course_type=course_type)
+
+
+@login_required(login_url='login')
+@user_passes_test(_is_staff, login_url='login')
+def panel_course_update_status(request, course_type, pk):
+    _course_type_or_404(course_type)
+    course = get_object_or_404(Course, pk=pk, course_type=course_type)
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        pricing = request.POST.get('pricing')
+        if status in dict(Course.STATUS_CHOICES):
+            course.status = status
+            course.is_active = status == Course.STATUS_PUBLISHED
+        if pricing in ('free', 'paid'):
+            course.force_free = pricing == 'free'
+        course.save(update_fields=['status', 'is_active', 'force_free'])
+        messages.success(request, f'{course.name} status updated.')
     return redirect('panel_course_list', course_type=course_type)
 
 
@@ -3428,7 +3626,10 @@ def panel_question_add(request, course_pk):
     else:
         form = QuestionForm(initial={'order': course.questions.count()}, course=course)
 
-    return render(request, 'myapp/panel/question_form.html', {'form': form, 'is_new': True, 'course': course, 'course_type': course.course_type})
+    return render(request, 'myapp/panel/question_form.html', {
+        'form': form, 'is_new': True, 'course': course, 'course_type': course.course_type,
+        'section_marks_options_json': _section_marks_options_json(course),
+    })
 
 
 @login_required(login_url='login')
@@ -3446,7 +3647,10 @@ def panel_question_edit(request, course_pk, pk):
     else:
         form = QuestionForm(instance=question, course=course)
 
-    return render(request, 'myapp/panel/question_form.html', {'form': form, 'is_new': False, 'course': course, 'question': question, 'course_type': course.course_type})
+    return render(request, 'myapp/panel/question_form.html', {
+        'form': form, 'is_new': False, 'course': course, 'question': question, 'course_type': course.course_type,
+        'section_marks_options_json': _section_marks_options_json(course),
+    })
 
 
 @login_required(login_url='login')
@@ -3510,6 +3714,11 @@ GOOGLE_DOC_SOLUTION_RE = re.compile(
 )
 GOOGLE_DOC_MARKS_RE = re.compile(r'^\s*(?:\[\s*marks?\s*\]|marks?\s*[:\-])\s*(.*)$', re.IGNORECASE)
 GOOGLE_DOC_SECTION_RE = re.compile(r'^\s*(?:\[\s*section\s*\]|section\s*[:\-])\s*(.*)$', re.IGNORECASE)
+GOOGLE_DOC_TRANSLATION_RE = re.compile(
+    r'^\s*(?:\[\s*(?P<lang1>hi|kn|hindi|kannada)\s*\]|(?P<lang2>hi|kn|hindi|kannada)\s*[:\-])\s*(?P<content>.*)$',
+    re.IGNORECASE,
+)
+TRANSLATION_LANG_MAP = {'hi': 'hi', 'hindi': 'hi', 'kn': 'kn', 'kannada': 'kn'}
 
 
 def _extract_google_doc_id(url):
@@ -3612,6 +3821,7 @@ def _parse_mcq_doc(text):
             or GOOGLE_DOC_SOLUTION_RE.match(first_line)
             or GOOGLE_DOC_MARKS_RE.match(first_line)
             or GOOGLE_DOC_SECTION_RE.match(first_line)
+            or GOOGLE_DOC_TRANSLATION_RE.match(first_line)
         )
         if is_continuation:
             blocks[-1].extend(block_lines)
@@ -3630,10 +3840,23 @@ def _parse_mcq_doc(text):
         section_name = None
         image_indices = []
         active = 'question'
+        translations = {'hi': {}, 'kn': {}}
+        last_field = None
+        untranslatable_hits = 0
         for line in lines:
             image_match = IMAGE_MARKER_RE.match(line)
             if image_match:
                 image_indices.append(int(image_match.group(1)))
+                continue
+            translation_match = GOOGLE_DOC_TRANSLATION_RE.match(line)
+            if translation_match:
+                lang = TRANSLATION_LANG_MAP[(translation_match.group('lang1') or translation_match.group('lang2')).lower()]
+                content = translation_match.group('content').strip()
+                if content and last_field:
+                    existing = translations[lang].get(last_field)
+                    translations[lang][last_field] = f'{existing} {content}' if existing else content
+                elif content:
+                    untranslatable_hits += 1
                 continue
             opt_match = GOOGLE_DOC_OPTION_RE.match(line)
             answer_match = GOOGLE_DOC_ANSWER_RE.match(line)
@@ -3641,30 +3864,38 @@ def _parse_mcq_doc(text):
             marks_match = GOOGLE_DOC_MARKS_RE.match(line)
             section_match = GOOGLE_DOC_SECTION_RE.match(line)
             if opt_match:
-                options[opt_match.group(1).upper()] = opt_match.group(2).strip()
+                letter = opt_match.group(1).upper()
+                options[letter] = opt_match.group(2).strip()
                 active = None
+                last_field = f'option_{letter.lower()}'
             elif answer_match:
                 answer_raw = answer_match.group(1).strip()
                 active = None
+                last_field = None
             elif solution_match:
                 solution_text = solution_match.group(1).strip()
                 active = 'solution'
+                last_field = None
             elif marks_match:
                 try:
                     marks = int(marks_match.group(1).strip())
                 except ValueError:
                     pass
                 active = None
+                last_field = None
             elif section_match:
                 section_name = section_match.group(1).strip()
                 active = None
+                last_field = None
             elif active == 'solution':
                 solution_text = f'{solution_text} {line}' if solution_text else line
             elif question_text is None:
                 question_text = GOOGLE_DOC_QUESTION_PREFIX_RE.sub('', line).strip()
                 active = 'question'
+                last_field = 'text'
             else:
                 question_text += ' ' + line
+                last_field = 'text'
 
         if not question_text:
             errors.append(f'Block {block_num}: skipped — could not find a question line.')
@@ -3689,6 +3920,9 @@ def _parse_mcq_doc(text):
         if len(image_indices) > 1:
             block_warnings.append(f'"{question_text[:50]}": {len(image_indices)} images found in this block — only the first was attached, add the rest manually.')
 
+        if untranslatable_hits:
+            block_warnings.append(f'"{question_text[:50]}": {untranslatable_hits} [HI]/[KN] line(s) did not follow a question or option line — ignored.')
+
         questions.append({
             'text': question_text,
             'options': options,
@@ -3697,6 +3931,7 @@ def _parse_mcq_doc(text):
             'marks': marks,
             'section_name': section_name,
             'image_index': image_indices[0] if image_indices else None,
+            'translations': {lang: data for lang, data in translations.items() if data},
             'warning': '; '.join(block_warnings) if block_warnings else None,
         })
 
@@ -3751,49 +3986,56 @@ def panel_question_bulk_upload(request, course_pk):
             if not parsed_questions and not parse_errors:
                 messages.error(request, 'No questions were found in that document. Check the format and try again.')
             else:
-                created = 0
                 warnings = []
-                errors = list(parse_errors)
-                next_order = course.questions.count()
-                with transaction.atomic():
-                    for q in parsed_questions:
-                        if q['warning']:
-                            warnings.append(q['warning'])
+                resolved_sections = []
+                for q in parsed_questions:
+                    if q['warning']:
+                        warnings.append(q['warning'])
 
-                        if forced_section != 'unset':
-                            section = forced_section
-                        else:
-                            section = None
-                            if q['section_name']:
-                                section = sections_by_name.get(q['section_name'].lower())
-                                if section is None:
-                                    warnings.append(f'"{q["text"][:50]}": section "{q["section_name"]}" not found — left unassigned.')
+                    if forced_section != 'unset':
+                        section = forced_section
+                    else:
+                        section = None
+                        if q['section_name']:
+                            section = sections_by_name.get(q['section_name'].lower())
+                            if section is None:
+                                warnings.append(f'"{q["text"][:50]}": section "{q["section_name"]}" not found — left unassigned.')
+                    resolved_sections.append(section)
 
-                        new_question = Question.objects.create(
-                            course=course,
-                            section=section,
-                            question_type=Question.SINGLE,
-                            text=q['text'],
-                            option_a=q['options'].get('A', ''),
-                            option_b=q['options'].get('B', ''),
-                            option_c=q['options'].get('C', ''),
-                            option_d=q['options'].get('D', ''),
-                            correct_answer=q['correct_answer'],
-                            solution=q['solution'],
-                            marks=q['marks'],
-                            order=next_order,
-                        )
-                        image_index = q.get('image_index')
-                        if image_index is not None and image_index < len(doc_images):
-                            blob, ext = doc_images[image_index]
-                            new_question.question_image.save(
-                                f'question_{new_question.pk}.{ext}', ContentFile(blob), save=True,
+                if parse_errors or warnings:
+                    problem_count = len(parse_errors) + len(warnings)
+                    results = {'created': 0, 'warnings': warnings, 'errors': parse_errors, 'issue_count': problem_count}
+                    messages.error(request, f'Found {problem_count} issue{"s" if problem_count != 1 else ""} in the document — fix them and re-upload. No questions were imported.')
+                else:
+                    created = 0
+                    next_order = course.questions.count()
+                    with transaction.atomic():
+                        for q, section in zip(parsed_questions, resolved_sections):
+                            new_question = Question.objects.create(
+                                course=course,
+                                section=section,
+                                question_type=Question.SINGLE,
+                                text=q['text'],
+                                option_a=q['options'].get('A', ''),
+                                option_b=q['options'].get('B', ''),
+                                option_c=q['options'].get('C', ''),
+                                option_d=q['options'].get('D', ''),
+                                correct_answer=q['correct_answer'],
+                                solution=q['solution'],
+                                marks=q['marks'],
+                                order=next_order,
+                                translations=q.get('translations') or {},
                             )
-                        next_order += 1
-                        created += 1
+                            image_index = q.get('image_index')
+                            if image_index is not None and image_index < len(doc_images):
+                                blob, ext = doc_images[image_index]
+                                new_question.question_image.save(
+                                    f'question_{new_question.pk}.{ext}', ContentFile(blob), save=True,
+                                )
+                            next_order += 1
+                            created += 1
 
-                results = {'created': created, 'warnings': warnings, 'errors': errors}
-                if created:
+                    results = {'created': created, 'warnings': [], 'errors': []}
                     messages.success(request, f'{created} question{"s" if created != 1 else ""} imported successfully.')
 
     return render(request, 'myapp/panel/question_bulk_upload.html', {
@@ -3810,10 +4052,20 @@ def panel_question_bulk_template(request, course_pk):
     get_object_or_404(Course, pk=course_pk, course_type=Course.TEST_SERIES)
     sample = (
         'Q1. What is the capital of India?\n'
+        '[HI] भारत की राजधानी क्या है?\n'
+        '[KN] ಭಾರತದ ರಾಜಧಾನಿ ಯಾವುದು?\n'
         'A) Mumbai\n'
+        '[HI] मुंबई\n'
+        '[KN] ಮುಂಬೈ\n'
         'B) New Delhi\n'
+        '[HI] नई दिल्ली\n'
+        '[KN] ಹೊಸ ದೆಹಲಿ\n'
         'C) Kolkata\n'
+        '[HI] कोलकाता\n'
+        '[KN] ಕೊಲ್ಕತ್ತಾ\n'
         'D) Chennai\n'
+        '[HI] चेन्नई\n'
+        '[KN] ಚೆನ್ನೈ\n'
         'Answer: B\n'
         'Solution: New Delhi has been the capital of India since 1911.\n'
         'Marks: 1\n'
